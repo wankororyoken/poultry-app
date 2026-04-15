@@ -1480,14 +1480,16 @@ function updateYesterdayHints(type, dateStr) {
       if (am > 0 || pm > 0) {
         if (type === 'eggs') {
           const parts = [];
-          if (am > 0) parts.push(`午前${am}個`);
-          if (pm > 0) parts.push(`午後${pm}個`);
-          text = `昨日 ${parts.join(' / ')}`;
+          if (am > 0) parts.push(`午前${am}`);
+          if (pm > 0) parts.push(`午後${pm}`);
+          const total = am + pm;
+          text = `昨日 ${parts.join(' / ')} = ${total}個`;
         } else if (type === 'feed') {
           const parts = [];
-          if (am > 0) parts.push(`午前${am.toFixed(1)}kg`);
-          if (pm > 0) parts.push(`午後${pm.toFixed(1)}kg`);
-          text = `昨日 ${parts.join(' / ')}`;
+          if (am > 0) parts.push(`午前${am.toFixed(1)}`);
+          if (pm > 0) parts.push(`午後${pm.toFixed(1)}`);
+          const total = (am + pm).toFixed(1);
+          text = `昨日 ${parts.join(' / ')} = ${total}kg`;
         } else {
           const total = (am + pm).toFixed(1);
           text = `昨日 ${total}kg`;

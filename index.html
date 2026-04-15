@@ -1478,9 +1478,15 @@ function updateYesterdayHints(type, dateStr) {
       const am = parseFloat(prev[type]?.['午前']?.[room]) || 0;
       const pm = parseFloat(prev[type]?.['午後']?.[room]) || 0;
       if (am > 0 || pm > 0) {
-        const unit = type === 'eggs' ? '個' : 'kg';
-        const total = type === 'feed' ? (am + pm).toFixed(1) : (am + pm);
-        text = `昨日 ${total}${unit}`;
+        if (type === 'eggs') {
+          const parts = [];
+          if (am > 0) parts.push(`午前${am}個`);
+          if (pm > 0) parts.push(`午後${pm}個`);
+          text = `昨日 ${parts.join(' / ')}`;
+        } else {
+          const total = (am + pm).toFixed(1);
+          text = `昨日 ${total}kg`;
+        }
       }
     }
     el.textContent = text;

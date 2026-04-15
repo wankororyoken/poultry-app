@@ -466,6 +466,18 @@
   }
   .copy-prev-btn:active { opacity: .7; }
 
+  /* ── 設定タブ ── */
+  .settings-panel { padding-bottom: 8px; }
+  .settings-save-btn {
+    width: 100%; height: 48px; margin-top: 16px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; border-radius: var(--radius); color: #000;
+    font-size: 15px; font-weight: 900; font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer; box-shadow: 0 4px 16px rgba(245,166,35,.4);
+  }
+  .settings-save-btn:active { opacity: .9; transform: scale(0.98); }
+  .settings-save-btn:disabled { opacity: .4; }
+
   /* ── 昨日ヒント ── */
   .room-yesterday {
     font-size: 10px; color: var(--text2); margin-top: 2px; min-height: 13px;
@@ -780,6 +792,9 @@
     <div class="tab" onclick="switchTab('summary')" id="tab-summary">
       <span class="tab-icon">📊</span>集計
     </div>
+    <div class="tab" onclick="switchTab('settings')" id="tab-settings">
+      <span class="tab-icon">⚙️</span>設定
+    </div>
   </div>
 
   <!-- CONTENT -->
@@ -816,7 +831,7 @@
           🌙 午後<div class="period-dot" id="dot-feed-pm"></div>
         </div>
       </div>
-      <button class="copy-prev-btn" id="copyPrevFeedBtn" onclick="copyPrevFeed()" style="display:none">📋 前日の餌をコピー</button>
+      <button class="copy-prev-btn" id="copyPrevFeedBtn" onclick="copyPrevFeed()" style="display:none">📋 規定量を入力</button>
       <div class="section-label">
         餌の量（kg）
         <span class="loaded-label" id="loaded-feed">読込済</span>
@@ -892,6 +907,14 @@
           <div class="history-empty">「読み込む」を押してください</div>
         </div>
       </div>
+    </div>
+
+    <!-- 設定タブ -->
+    <div class="tab-panel settings-panel" id="panel-settings">
+      <div class="section-label">餌の規定量（kg）</div>
+      <div class="room-grid" id="settings-feed-grid"></div>
+      <button class="settings-save-btn" id="settingsSaveBtn" onclick="saveSettingsData()">💾 規定量を保存</button>
+      <div class="app-version" id="settings-saved-msg"></div>
     </div>
 
     <div class="app-version">ver 46</div>
@@ -981,8 +1004,9 @@ let feedPeriod = '午前';
 let currentTab = 'eggs'; // 現在アクティブなタブ
 const dataCache = {};       // 'yyyy-MM-dd' → loaded data object（キャッシュ）
 const deadMonthlyCache = {}; // 'yyyy-MM-dd' → deadMonthlyData object
-const feedYesterdaySet = new Set(); // 前日フォールバックで読み込まれた未確定の餌値 'period_room'
-let prevFeedData = { '午前': {}, '午後': {} }; // 前日の餌データ（コピーボタン用）
+const feedYesterdaySet = new Set(); // 規定量ボタンで入力された値 'period_room'
+let prevFeedData = { '午前': {}, '午後': {} }; // 前日の餌データ（昨日ヒント用）
+let feedDefaults = {}; // 部屋ごとの規定量
 const feedSavedPeriods = new Set(); // 保存済みの時間帯（コピーボタン非表示判定用）
 let lastFetchTime = null;
 const RELOAD_THRESHOLD = 5 * 60 * 1000; // 5分
@@ -1051,6 +1075,8 @@ window.onload = function() {
   buildGrid('eggs-grid', 'eggs', '個');
   buildGrid('feed-grid', 'feed', 'kg', true);
   buildDeadGrid();
+  buildSettingsGrid();
+  loadSettingsData();
 };
 
 function buildGrid(containerId, type, unit, decimal = false) {
@@ -1552,23 +1578,24 @@ function setPrevFeedData(dateStr) {
 function updateCopyFeedBtn() {
   const btn = document.getElementById('copyPrevFeedBtn');
   if (!btn) return;
-  const hasPrev = ROOMS.some(r => prevFeedData[feedPeriod]?.[r] !== undefined && prevFeedData[feedPeriod]?.[r] !== '');
-  btn.style.display = (hasPrev && !feedSavedPeriods.has(feedPeriod)) ? 'block' : 'none';
+  const hasDefaults = ROOMS.some(r => feedDefaults[r] !== undefined && feedDefaults[r] !== '');
+  btn.style.display = (hasDefaults && !feedSavedPeriods.has(feedPeriod)) ? 'block' : 'none';
 }
 
 function copyPrevFeed() {
   ROOMS.forEach(room => {
-    const v = prevFeedData[feedPeriod]?.[room];
+    const v = feedDefaults[room];
     if (v === undefined || v === '') return;
-    data.feed[feedPeriod][room] = v;
+    const sv = String(v);
+    data.feed[feedPeriod][room] = sv;
     const el   = document.getElementById(`input-feed-${room}`);
     const card = document.getElementById(`card-feed-${room}`);
     const dot  = document.getElementById(`dot-card-feed-${room}`);
-    if (el) el.value = v;
+    if (el) el.value = sv;
     card?.classList.add('has-value');
     card?.classList.remove('loaded-value');
     dot?.classList.toggle('show', false);
-    feedYesterdaySet.add(`${feedPeriod}_${room}`); // 前日値バッジを表示するためセット
+    feedYesterdaySet.add(`${feedPeriod}_${room}`);
   });
   updateFeedTotal();
   updateFeedStatusBadges();
@@ -2057,7 +2084,7 @@ function updateFeedStatusBadges() {
     const val = data.feed[feedPeriod][room];
     if (val === undefined || val === '') { el.className = 'feed-status'; return; }
     if (feedYesterdaySet.has(`${feedPeriod}_${room}`)) {
-      el.className = 'feed-status prev'; el.textContent = '前日値';
+      el.className = 'feed-status prev'; el.textContent = '規定量';
     } else {
       el.className = 'feed-status saved'; el.textContent = '保存済み';
     }
@@ -2187,14 +2214,14 @@ let chartEggs = null;
 
 function switchTab(tab) {
   currentTab = tab;
-  ['eggs','feed','dead','summary'].forEach(t => {
+  ['eggs','feed','dead','summary','settings'].forEach(t => {
     document.getElementById(`tab-${t}`)?.classList.toggle('active', t === tab);
     document.getElementById(`panel-${t}`)?.classList.toggle('active', t === tab);
   });
   if (tab === 'summary' && !summaryData) loadSummary();
-  // 集計タブでは保存・クリアボタンを非表示
+  // 集計・設定タブでは保存・クリアボタンを非表示
   const bottomBar = document.querySelector('.bottom-bar');
-  if (bottomBar) bottomBar.style.display = tab === 'summary' ? 'none' : '';
+  if (bottomBar) bottomBar.style.display = (tab === 'summary' || tab === 'settings') ? 'none' : '';
 }
 
 function loadHistory() {
@@ -2406,6 +2433,69 @@ function drawChart(canvasId, labels, values, color, unit, labelId, avg, hasData)
     const el = document.getElementById(labelId);
     if (el) el.textContent = hasData ? `平均 ${avg.toLocaleString()} ${unit}` : '';
   }
+}
+
+// ── 設定（餌の規定量）──
+function buildSettingsGrid() {
+  const container = document.getElementById('settings-feed-grid');
+  if (!container) return;
+  ROOMS.forEach(room => {
+    const card = document.createElement('div');
+    card.className = 'room-card';
+    card.innerHTML = `
+      <div class="room-label">${room}</div>
+      <input class="room-input" type="number" inputmode="decimal"
+        placeholder="0" id="setting-feed-${room}" onfocus="this.select()">
+      <div class="room-unit">kg</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function loadSettingsData() {
+  google.script.run
+    .withSuccessHandler(res => {
+      if (res.success && res.feedDefaults) {
+        feedDefaults = res.feedDefaults;
+        ROOMS.forEach(room => {
+          const el = document.getElementById(`setting-feed-${room}`);
+          if (el && feedDefaults[room] !== undefined) el.value = feedDefaults[room];
+        });
+        updateCopyFeedBtn();
+      }
+    })
+    .withFailureHandler(() => {})
+    .getSettings();
+}
+
+function saveSettingsData() {
+  const btn = document.getElementById('settingsSaveBtn');
+  btn.disabled = true;
+  const payload = {
+    feedDefaults: ROOMS.map(room => {
+      const el = document.getElementById(`setting-feed-${room}`);
+      return { room, value: el ? el.value : '' };
+    })
+  };
+  google.script.run
+    .withSuccessHandler(res => {
+      btn.disabled = false;
+      if (res.success) {
+        feedDefaults = {};
+        payload.feedDefaults.forEach(item => {
+          if (item.value !== '') feedDefaults[item.room] = Number(item.value);
+        });
+        updateCopyFeedBtn();
+        showToast('✅ 規定量を保存しました', 'success');
+      } else {
+        showToast('❌ 保存失敗', 'error');
+      }
+    })
+    .withFailureHandler(() => {
+      btn.disabled = false;
+      showToast('❌ 保存失敗', 'error');
+    })
+    .saveSettings(payload);
 }
 </script>
 </body>

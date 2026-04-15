@@ -11,7 +11,8 @@ const SHEETS = {
   餌: '餌記録',
   死鶏: '死鶏記録',
   入力者: '入力者',
-  メモ: 'メモ記録'
+  メモ: 'メモ記録',
+  設定: '設定'
 };
 
 // ===================================================
@@ -61,6 +62,12 @@ function initSheets() {
     sheet.getRange(1, 1, 1, 6).setFontWeight('bold').setBackground('#f3f3f3');
   }
 
+  sheet = getOrCreateSheet(ss, SHEETS.設定);
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['鶏舎', '規定量(kg)']);
+    sheet.getRange(1, 1, 1, 2).setFontWeight('bold').setBackground('#f3f3f3');
+  }
+
   return '初期化完了';
 }
 
@@ -68,6 +75,41 @@ function getOrCreateSheet(ss, name) {
   let sheet = ss.getSheetByName(name);
   if (!sheet) sheet = ss.insertSheet(name);
   return sheet;
+}
+
+// ===================================================
+// 設定（餌の規定量）取得・保存
+// ===================================================
+function getSettings() {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(SHEETS.設定);
+    if (!sheet || sheet.getLastRow() <= 1) return { success: true, feedDefaults: {} };
+    const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues();
+    const feedDefaults = {};
+    rows.forEach(row => { if (row[0]) feedDefaults[String(row[0])] = row[1]; });
+    return { success: true, feedDefaults };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function saveSettings(payload) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(SHEETS.設定);
+    if (sheet.getLastRow() > 1) {
+      sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).clearContent();
+    }
+    payload.feedDefaults.forEach(item => {
+      if (item.value !== '' && item.value !== null && item.value !== undefined) {
+        sheet.appendRow([item.room, Number(item.value)]);
+      }
+    });
+    return { success: true };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
 }
 
 // ===================================================

@@ -1,0 +1,2412 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>養鶏管理</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #232738;
+    --border: #2e3349;
+    --accent: #f5a623;
+    --accent2: #e8743b;
+    --green: #4caf7d;
+    --red: #e05c5c;
+    --blue: #5b8dee;
+    --text: #eef0f8;
+    --text2: #8b90a8;
+    --radius: 14px;
+    --tab-h: 56px;
+    --header-h: 60px;
+    --bottom-h: 96px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: calc(var(--header-h) + env(safe-area-inset-top));
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-end; justify-content: space-between;
+    padding: 0 16px 0 16px;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: 10px;
+  }
+  .header-title {
+    font-size: 18px; font-weight: 900;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: -0.3px;
+  }
+  .header-right {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .header-date-btn {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 10px;
+    font-size: 12px; color: var(--text); font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; gap: 4px;
+    position: relative;
+  }
+  .header-date-btn input[type="date"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer;
+    width: 100%; height: 100%;
+  }
+  .worker-badge {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 10px;
+    font-size: 12px; color: var(--accent); font-weight: 700;
+    cursor: pointer;
+  }
+  .date-nav { display: flex; align-items: center; gap: 4px; }
+  .nav-btn {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 50%; width: 26px; height: 26px;
+    color: var(--text); font-size: 17px; font-weight: 900;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; padding: 0; line-height: 1;
+  }
+  .nav-btn:active { background: var(--border); }
+  .nav-btn:disabled { opacity: 0.25; cursor: default; }
+
+  /* ── LOAD BANNER ── */
+  .load-banner {
+    position: fixed; top: calc(var(--header-h) + env(safe-area-inset-top)); left: 0; right: 0; z-index: 98;
+    background: rgba(76,175,125,.15); border-bottom: 1px solid rgba(76,175,125,.3);
+    padding: 7px 14px;
+    font-size: 11px; font-weight: 700; color: var(--green);
+    display: flex; align-items: center; gap: 6px;
+    transform: translateY(-100%); transition: transform .25s;
+    pointer-events: none;
+  }
+  .load-banner.show { transform: translateY(0); }
+  .load-banner-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+
+  /* ── TABS ── */
+  .tabs {
+    position: fixed; top: calc(var(--header-h) + env(safe-area-inset-top)); left: 0; right: 0; z-index: 99;
+    height: var(--tab-h);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    transition: top .25s;
+  }
+  .tabs.with-banner { top: calc(var(--header-h) + env(safe-area-inset-top) + 30px); }
+  .tab {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 2px;
+    font-size: 11px; font-weight: 700; color: var(--text2);
+    cursor: pointer; position: relative; transition: color .2s;
+    letter-spacing: 0.5px;
+  }
+  .tab .tab-icon { font-size: 18px; line-height: 1; }
+  .tab.active { color: var(--accent); }
+  .tab.active::after {
+    content: '';
+    position: absolute; bottom: 0; left: 20%; right: 20%; height: 2px;
+    background: var(--accent); border-radius: 2px 2px 0 0;
+  }
+  .tab .has-badge {
+    position: absolute; top: 6px; right: calc(50% - 18px);
+    width: 7px; height: 7px; border-radius: 50%; background: var(--green);
+    display: none;
+  }
+  .tab .has-badge.show { display: block; }
+
+  /* ── CONTENT ── */
+  .content {
+    padding-top: calc(var(--header-h) + env(safe-area-inset-top) + var(--tab-h) + 12px);
+    padding-bottom: calc(var(--bottom-h) + 20px);
+    padding-left: 12px; padding-right: 12px;
+    transition: padding-top .25s;
+  }
+  .content.with-banner { padding-top: calc(var(--header-h) + env(safe-area-inset-top) + 30px + var(--tab-h) + 12px); }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── PERIOD TOGGLE ── */
+  .period-toggle {
+    display: flex; background: var(--surface2);
+    border-radius: 10px; padding: 3px; margin-bottom: 14px;
+    border: 1px solid var(--border);
+  }
+  .period-btn {
+    flex: 1; padding: 8px 0;
+    border-radius: 8px; font-size: 13px; font-weight: 700;
+    color: var(--text2); cursor: pointer; text-align: center;
+    transition: all .2s; position: relative;
+  }
+  .period-btn.active {
+    background: var(--accent); color: #000;
+    box-shadow: 0 2px 8px rgba(245,166,35,.35);
+  }
+  .period-btn .period-dot {
+    position: absolute; top: 5px; right: 10px;
+    width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+    display: none;
+  }
+  .period-btn .period-dot.show { display: block; }
+
+  /* ── ROOM GRID ── */
+  .section-label {
+    font-size: 11px; font-weight: 700; color: var(--text2);
+    text-transform: uppercase; letter-spacing: 1.2px;
+    margin-bottom: 8px; padding-left: 2px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .loaded-label {
+    font-size: 10px; font-weight: 700; color: var(--green);
+    background: rgba(76,175,125,.12); border-radius: 4px;
+    padding: 1px 6px; display: none;
+  }
+  .loaded-label.show { display: inline-block; }
+
+  .room-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px; margin-bottom: 8px;
+  }
+  .room-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    transition: border-color .2s, background .2s;
+  }
+  .room-card:focus-within {
+    border-color: var(--accent);
+    background: var(--surface2);
+  }
+  .room-card.has-value { border-color: rgba(245,166,35,.5); }
+  .room-card.loaded-value { border-color: rgba(76,175,125,.45); }
+  .room-card.loaded-value:focus-within { border-color: var(--accent); }
+
+  .room-label {
+    font-size: 10px; font-weight: 700; color: var(--text2);
+    letter-spacing: 0.8px; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .room-loaded-dot {
+    width: 5px; height: 5px; border-radius: 50%; background: var(--green); display: none;
+  }
+  .room-loaded-dot.show { display: inline-block; }
+
+  .room-input {
+    width: 100%; background: transparent; border: none; outline: none;
+    color: var(--text); font-size: 26px; font-weight: 900;
+    font-family: 'Noto Sans JP', sans-serif;
+    caret-color: var(--accent);
+    -webkit-appearance: none;
+  }
+  .room-input::placeholder { color: var(--border); font-size: 22px; }
+  .room-unit { font-size: 10px; color: var(--text2); margin-top: 2px; }
+
+  .room-grid.dead-grid { grid-template-columns: 1fr 1fr; }
+  .room-card.dead-card .room-input { font-size: 24px; color: var(--red); }
+  .room-card.dead-card:focus-within { border-color: var(--red); }
+  .room-card.dead-card.has-value { border-color: rgba(224,92,92,.5); }
+  .room-card.dead-card.loaded-value { border-color: rgba(76,175,125,.45); }
+
+  /* ── BOTTOM BAR ── */
+  .bottom-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 6px 16px 12px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    gap: 6px;
+  }
+  .bottom-btn-row { display: flex; width: 100%; gap: 10px; }
+  .reload-bar {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; width: 100%;
+  }
+  .reload-time { font-size: 11px; color: var(--text2); }
+  .reload-btn-small {
+    background: none; border: 1px solid var(--border);
+    border-radius: 6px; padding: 0 10px; height: 44px;
+    font-size: 16px; color: var(--text2); font-weight: 700;
+    cursor: pointer; font-family: 'Noto Sans JP', sans-serif;
+    flex-shrink: 0;
+  }
+  .reload-btn-small:active { opacity: .7; }
+
+  .btn-clear {
+    flex: 1; height: 44px;
+    background: var(--surface2); border: 1.5px solid var(--border);
+    border-radius: 10px; color: var(--text2);
+    font-size: 14px; font-weight: 700; font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer; transition: all .15s;
+  }
+  .btn-clear:active { opacity: .7; }
+  .btn-save {
+    flex: 2.5; height: 44px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; border-radius: 10px; color: #000;
+    font-size: 15px; font-weight: 900; font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer; transition: all .15s;
+    box-shadow: 0 4px 16px rgba(245,166,35,.4);
+  }
+  .btn-save:active { transform: scale(0.98); opacity: .9; }
+  .btn-save:disabled { opacity: .4; }
+
+  /* ── MODAL: 入力者選択 ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
+    align-items: flex-end; justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-sheet {
+    background: var(--surface2);
+    border-radius: 20px 20px 0 0;
+    padding: 20px 16px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    width: 100%; max-height: 70dvh; overflow-y: auto;
+    border-top: 1px solid var(--border);
+  }
+  .modal-title {
+    font-size: 14px; font-weight: 700; color: var(--text2);
+    text-align: center; margin-bottom: 16px; letter-spacing: 0.5px;
+  }
+  .worker-list { display: flex; flex-direction: column; gap: 8px; }
+  .worker-item {
+    padding: 14px 16px;
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 12px; font-size: 16px; font-weight: 700;
+    cursor: pointer; transition: all .15s;
+  }
+  .worker-item.selected {
+    border-color: var(--accent); color: var(--accent);
+    background: rgba(245,166,35,.08);
+  }
+  .worker-item:active { opacity: .7; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: calc(var(--bottom-h) + 12px);
+    left: 50%; transform: translateX(-50%);
+    z-index: 300; pointer-events: none;
+    padding: 10px 20px; border-radius: 24px;
+    font-size: 13px; font-weight: 700;
+    background: var(--green); color: #fff;
+    box-shadow: 0 4px 20px rgba(76,175,125,.4);
+    opacity: 0; transition: opacity .3s;
+    white-space: nowrap;
+  }
+  .toast.error { background: var(--red); box-shadow: 0 4px 20px rgba(224,92,92,.4); }
+  .toast.info  { background: var(--blue); box-shadow: 0 4px 20px rgba(91,141,238,.4); }
+  .toast.show { opacity: 1; }
+
+  /* ── 未送信バッジ ── */
+  .pending-btn {
+    background: rgba(91,141,238,.2); border: 1px solid rgba(91,141,238,.5);
+    border-radius: 20px; padding: 4px 8px;
+    font-size: 11px; color: var(--blue); font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; gap: 3px;
+  }
+  .pending-btn:active { opacity: .7; }
+
+  /* ── 未送信モーダル ── */
+  .pending-modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
+    align-items: flex-end; justify-content: center;
+  }
+  .pending-modal-overlay.show { display: flex; }
+  .pending-modal-sheet {
+    background: var(--surface2); border-radius: 20px 20px 0 0;
+    padding: 20px 16px; padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    width: 100%; max-height: 75dvh; overflow-y: auto;
+    border-top: 1px solid var(--border);
+  }
+  .pending-modal-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+  }
+  .pending-modal-title { font-size: 15px; font-weight: 900; color: var(--text); }
+  .pending-close-btn {
+    background: none; border: none; color: var(--text2);
+    font-size: 18px; cursor: pointer; padding: 4px 8px;
+  }
+  .pending-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px; margin-bottom: 10px;
+  }
+  .pending-item-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;
+  }
+  .pending-item-date { font-size: 13px; font-weight: 700; color: var(--text); }
+  .pending-item-worker { font-size: 12px; color: var(--accent); font-weight: 700; }
+  .pending-item-summary { font-size: 11px; color: var(--text2); margin-bottom: 10px; }
+  .pending-item-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .pending-sync-btn {
+    background: var(--blue); border: none; border-radius: 8px;
+    color: #fff; font-size: 12px; font-weight: 700; padding: 6px 14px; cursor: pointer;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  .pending-sync-btn:disabled { opacity: .5; }
+  .pending-del-btn {
+    background: none; border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text2); font-size: 12px; font-weight: 700; padding: 6px 14px; cursor: pointer;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  .pending-empty { text-align: center; color: var(--text2); font-size: 13px; padding: 24px 0; }
+  .sync-all-btn {
+    width: 100%; height: 48px;
+    background: linear-gradient(135deg, var(--blue), #4a7ad8);
+    border: none; border-radius: var(--radius); color: #fff;
+    font-size: 15px; font-weight: 900; font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer; margin-top: 8px;
+  }
+  .sync-all-btn:disabled { opacity: .5; }
+
+  /* ── LOADING ── */
+  .loading-overlay {
+    display: none; position: fixed; inset: 0; z-index: 400;
+    background: rgba(0,0,0,.5); align-items: center; justify-content: center;
+  }
+  .loading-overlay.show { display: flex; }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── SETUP SCREEN ── */
+  .setup-screen {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100dvh; padding: 32px 20px; gap: 20px;
+  }
+  .setup-logo { font-size: 48px; margin-bottom: 8px; }
+  .setup-title { font-size: 22px; font-weight: 900; color: var(--text); }
+  .setup-sub { font-size: 13px; color: var(--text2); text-align: center; line-height: 1.6; }
+  .setup-worker-select {
+    width: 100%; background: var(--surface2); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+    color: var(--text); font-size: 16px; font-weight: 700;
+    font-family: 'Noto Sans JP', sans-serif;
+    -webkit-appearance: none; appearance: none; outline: none;
+  }
+  .setup-btn {
+    width: 100%; height: 52px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; border-radius: var(--radius); color: #000;
+    font-size: 16px; font-weight: 900; font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer; box-shadow: 0 4px 20px rgba(245,166,35,.4);
+  }
+  .date-input {
+    width: 100%; background: var(--surface2); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+    color: var(--text); font-size: 16px; font-weight: 700;
+    font-family: 'Noto Sans JP', sans-serif;
+    -webkit-appearance: none; outline: none; color-scheme: dark;
+  }
+
+  /* ── 合計バー ── */
+  .total-bar {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    margin-top: 4px; margin-bottom: 12px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .total-bar-label {
+    font-size: 11px; font-weight: 700; color: var(--text2); letter-spacing: 0.5px;
+  }
+  .total-bar-value {
+    font-size: 22px; font-weight: 900; color: var(--accent);
+    line-height: 1;
+  }
+  .total-bar-unit { font-size: 11px; color: var(--text2); margin-left: 2px; }
+
+  /* 部屋カードの合計サブテキスト */
+  .room-sub {
+    font-size: 10px; color: var(--text2); margin-top: 1px; min-height: 14px;
+  }
+  .room-sub.has-total { color: var(--green); font-weight: 700; }
+
+  /* 餌ステータスバッジ */
+  .feed-status {
+    font-size: 9px; font-weight: 700; border-radius: 4px;
+    padding: 1px 5px; margin-left: 2px; display: none;
+  }
+  .feed-status.saved  { display: inline-block; color: var(--green);  background: rgba(76,175,125,.15); }
+  .feed-status.prev   { display: inline-block; color: var(--accent); background: rgba(245,166,35,.15); }
+
+  .copy-prev-btn {
+    width: 100%; padding: 10px 0;
+    background: rgba(91,141,238,.12);
+    border: 1.5px solid rgba(91,141,238,.35);
+    border-radius: 10px; color: var(--blue);
+    font-size: 13px; font-weight: 700;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer; margin-bottom: 12px;
+    transition: all .15s;
+  }
+  .copy-prev-btn:active { opacity: .7; }
+
+  /* ── 昨日ヒント ── */
+  .room-yesterday {
+    font-size: 10px; color: var(--text2); margin-top: 2px; min-height: 13px;
+  }
+  .room-hist-icon {
+    margin-left: auto; font-size: 14px; color: var(--text2); opacity: .45; flex-shrink: 0;
+  }
+  .room-label { cursor: pointer; }
+  .room-label:active .room-hist-icon { opacity: .9; }
+
+  /* ── 部屋別履歴モーダル ── */
+  .room-hist-overlay {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
+    align-items: flex-end; justify-content: center;
+  }
+  .room-hist-overlay.show { display: flex; }
+  .room-hist-sheet {
+    background: var(--surface2); border-radius: 20px 20px 0 0;
+    padding: 20px 16px; padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    width: 100%; border-top: 1px solid var(--border);
+  }
+  .room-hist-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+  }
+  .room-hist-title { font-size: 15px; font-weight: 900; color: var(--text); }
+  .room-hist-close {
+    background: none; border: none; color: var(--text2); font-size: 20px; cursor: pointer; padding: 4px 8px;
+  }
+  .hist-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 6px; border-bottom: 1px solid var(--border);
+  }
+  .hist-row:last-child { border-bottom: none; }
+  .hist-row.hist-today { background: rgba(245,166,35,.07); border-radius: 8px; border-bottom: none; margin-bottom: 4px; }
+  .hist-date { font-size: 13px; font-weight: 700; color: var(--text); flex: 1; }
+  .hist-val  { font-size: 16px; font-weight: 900; color: var(--accent); min-width: 72px; text-align: right; }
+  .hist-trend { font-size: 11px; font-weight: 700; min-width: 44px; text-align: right; }
+  .hist-trend.up { color: var(--green); }
+  .hist-trend.dn { color: var(--red); }
+  .hist-trend.fl { color: var(--text2); }
+
+  /* ── サマリータブ ── */
+  .summary-panel { padding-bottom: 8px; }
+
+  .summary-period-toggle {
+    display: flex; background: var(--surface2);
+    border-radius: 10px; padding: 3px; margin-bottom: 14px;
+    border: 1px solid var(--border);
+  }
+  .summary-period-btn {
+    flex: 1; padding: 7px 0; border-radius: 8px;
+    font-size: 12px; font-weight: 700; color: var(--text2);
+    cursor: pointer; text-align: center; transition: all .2s;
+  }
+  .summary-period-btn.active { background: var(--accent); color: #000; box-shadow: 0 2px 8px rgba(245,166,35,.35); }
+
+  .chart-block {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 12px; margin-bottom: 10px;
+  }
+  .chart-block-title {
+    font-size: 11px; font-weight: 700; color: var(--text2);
+    letter-spacing: 1px; margin-bottom: 10px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .chart-block-avg {
+    font-size: 11px; color: var(--accent); font-weight: 700;
+  }
+  .chart-wrap { position: relative; width: 100%; height: 120px; }
+  canvas.chart-canvas { width: 100% !important; height: 120px !important; }
+
+  .summary-stats {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px; margin-bottom: 10px;
+  }
+  .stat-card {
+    background: var(--surface2); border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 10px 8px; text-align: center;
+  }
+  .stat-card-label { font-size: 9px; font-weight: 700; color: var(--text2); letter-spacing: 0.5px; margin-bottom: 4px; }
+  .stat-card-value { font-size: 18px; font-weight: 900; line-height: 1; }
+  .stat-card-unit  { font-size: 9px; color: var(--text2); margin-top: 2px; }
+  .stat-eggs  { color: var(--accent); }
+  .stat-feed  { color: var(--green); }
+  .stat-dead  { color: var(--red); }
+
+  .summary-loading {
+    text-align: center; padding: 40px 0;
+    font-size: 13px; color: var(--text2); font-weight: 700;
+  }
+
+  /* ── 入力履歴 ── */
+  .history-section { margin-top: 24px; padding-bottom: 8px; }
+  .history-section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .history-section-title { font-size: 14px; font-weight: 900; color: var(--text); }
+  .history-load-btn {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 5px 12px;
+    font-size: 12px; color: var(--text); font-weight: 700;
+    cursor: pointer; font-family: 'Noto Sans JP', sans-serif;
+  }
+  .history-load-btn:disabled { opacity: .5; }
+  .history-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;
+  }
+  .history-item-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;
+  }
+  .history-item-time { font-size: 12px; font-weight: 700; color: var(--text2); }
+  .history-item-worker { font-size: 13px; font-weight: 900; color: var(--accent); }
+  .history-item-date { font-size: 11px; color: var(--text2); margin-bottom: 8px; }
+  .history-rows { display: flex; flex-direction: column; gap: 5px; }
+  .history-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 700;
+  }
+  .history-row-label { color: var(--text); flex: 1; }
+  .history-row-rooms { color: var(--text2); font-size: 11px; }
+  .history-row-total { color: var(--text); min-width: 60px; text-align: right; }
+  .history-empty { text-align: center; color: var(--text2); font-size: 13px; padding: 20px 0; }
+  .history-memos {
+    margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .history-memo-item { font-size: 12px; display: flex; gap: 6px; align-items: baseline; }
+  .history-memo-room { color: var(--accent); font-weight: 700; flex-shrink: 0; }
+  .history-memo-text { color: var(--text); line-height: 1.5; }
+
+  /* ── 入力漏れチェックモーダル ── */
+  .check-modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 250;
+    background: rgba(0,0,0,.75); backdrop-filter: blur(4px);
+    align-items: flex-end; justify-content: center;
+  }
+  .check-modal-overlay.show { display: flex; }
+  .check-modal-sheet {
+    background: var(--surface2);
+    border-radius: 20px 20px 0 0;
+    padding: 20px 16px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    width: 100%; max-height: 80dvh; overflow-y: auto;
+    border-top: 1px solid var(--border);
+  }
+  .check-modal-title {
+    font-size: 15px; font-weight: 900; color: var(--text);
+    margin-bottom: 4px;
+  }
+  .check-modal-sub {
+    font-size: 12px; color: var(--text2); margin-bottom: 16px; line-height: 1.5;
+  }
+  .check-group { margin-bottom: 14px; }
+  .check-group-title {
+    font-size: 10px; font-weight: 700; color: var(--text2);
+    letter-spacing: 1px; margin-bottom: 6px;
+  }
+  .check-items {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .check-item {
+    padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: 700;
+    background: rgba(224,92,92,.15); border: 1px solid rgba(224,92,92,.4);
+    color: var(--red);
+  }
+  .check-modal-btns {
+    display: flex; gap: 8px; margin-top: 16px;
+  }
+  .check-btn-cancel {
+    flex: 1; height: 44px;
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 10px; color: var(--text2);
+    font-size: 13px; font-weight: 700; font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+  }
+  .check-btn-save {
+    flex: 2; height: 44px;
+    background: var(--surface); border: 1.5px solid var(--red);
+    border-radius: 10px; color: var(--red);
+    font-size: 13px; font-weight: 700; font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+  }
+
+  /* ── 鶏舎ごとメモ ── */
+  .room-memo {
+    width: 100%; background: transparent; border: none;
+    border-top: 1px solid var(--border);
+    outline: none; color: var(--text2);
+    font-size: 11px; font-weight: 500;
+    font-family: 'Noto Sans JP', sans-serif;
+    padding: 5px 0 2px;
+    margin-top: 5px;
+    caret-color: var(--accent);
+    resize: none; overflow: hidden;
+    min-height: 20px; line-height: 1.5;
+    display: block;
+  }
+  .room-memo::placeholder { color: var(--border); font-size: 11px; }
+  .room-memo:focus { color: var(--text); border-top-color: var(--accent); outline: none; }
+  .room-card:focus-within .room-memo { border-top-color: var(--accent); }
+  .room-memo.has-memo { color: var(--accent); border-top-color: rgba(245,166,35,.4); }
+
+  /* ── 死鶏累計 ── */
+  .room-card.dead-card .room-monthly {
+    font-size: 10px; color: var(--red); margin-top: 2px;
+    font-weight: 700; opacity: .8; min-height: 14px;
+  }
+  .dead-monthly-bar {
+    background: var(--surface2); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 10px 14px;
+    margin-top: 4px; margin-bottom: 10px;
+  }
+  .dead-monthly-title {
+    font-size: 10px; font-weight: 700; color: var(--text2);
+    letter-spacing: 1px; margin-bottom: 8px;
+  }
+  .dead-monthly-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px;
+  }
+  .dead-monthly-item {
+    text-align: center; background: var(--surface);
+    border-radius: 8px; padding: 6px 4px;
+    border: 1px solid var(--border);
+  }
+  .dead-monthly-room { font-size: 9px; color: var(--text2); font-weight: 700; margin-bottom: 2px; }
+  .dead-monthly-val  { font-size: 16px; font-weight: 900; color: var(--red); line-height: 1; }
+  .dead-monthly-val.zero { color: var(--border); font-size: 14px; }
+  .dead-monthly-total {
+    margin-top: 8px; text-align: right;
+    font-size: 11px; font-weight: 700; color: var(--text2);
+  }
+  .dead-monthly-total span { color: var(--red); font-size: 16px; }
+  .app-version {
+    text-align: center; font-size: 10px; color: var(--border);
+    padding: 8px 0 4px; letter-spacing: 0.5px;
+  }
+
+  .section-label-setup {
+    font-size: 11px; font-weight: 700; color: var(--text2);
+    letter-spacing: 1.2px; margin-bottom: 8px; width: 100%;
+  }
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setupScreen" class="setup-screen">
+  <div class="setup-logo">🐔</div>
+  <div class="setup-title">養鶏管理</div>
+  <div class="setup-sub">入力者と日付を選択して<br>開始してください</div>
+
+  <div style="width:100%">
+    <div class="section-label-setup">入力者</div>
+    <select id="workerSelect" class="setup-worker-select">
+      <option value="">読み込み中...</option>
+    </select>
+  </div>
+
+  <div style="width:100%">
+    <div class="section-label-setup">作業日</div>
+    <input type="date" id="dateInput" class="date-input">
+  </div>
+
+  <button class="setup-btn" onclick="startApp()">入力開始 →</button>
+  <div class="app-version">ver 46</div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" style="display:none">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-title">🐔 養鶏管理</div>
+    <div class="header-right">
+      <div class="date-nav">
+        <button class="nav-btn" onclick="navigateDate(-1)">‹</button>
+        <div class="header-date-btn" id="headerDateBtn">
+          <span id="headerDateLabel">－</span>
+          <span style="font-size:10px;color:var(--text2)">▾</span>
+          <input type="date" id="headerDateInput" onchange="onDateChange(this.value)" style="color-scheme:dark">
+        </div>
+        <button class="nav-btn" id="nextDayBtn" onclick="navigateDate(1)">›</button>
+      </div>
+      <div class="worker-badge" id="workerBadge" onclick="showWorkerModal()">－</div>
+      <button class="pending-btn" id="pendingBtn" onclick="showPendingModal()" style="display:none">📤 <span id="pendingCount">0</span></button>
+    </div>
+  </div>
+
+  <!-- LOAD BANNER -->
+  <div class="load-banner" id="loadBanner">
+    <div class="load-banner-dot"></div>
+    <span id="loadBannerText">既存データを読み込みました</span>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs" id="tabs">
+    <div class="tab active" onclick="switchTab('eggs')" id="tab-eggs">
+      <span class="tab-icon">🥚</span>採卵
+      <div class="has-badge" id="badge-eggs"></div>
+    </div>
+    <div class="tab" onclick="switchTab('feed')" id="tab-feed">
+      <span class="tab-icon">🌾</span>餌
+      <div class="has-badge" id="badge-feed"></div>
+    </div>
+    <div class="tab" onclick="switchTab('dead')" id="tab-dead">
+      <span class="tab-icon">💀</span>死鶏
+      <div class="has-badge" id="badge-dead"></div>
+    </div>
+    <div class="tab" onclick="switchTab('summary')" id="tab-summary">
+      <span class="tab-icon">📊</span>集計
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" id="mainContent">
+
+    <!-- 採卵タブ -->
+    <div class="tab-panel active" id="panel-eggs">
+      <div class="period-toggle">
+        <div class="period-btn active" onclick="setPeriod('eggs','午前')" id="eggs-am">
+          ☀️ 午前<div class="period-dot" id="dot-eggs-am"></div>
+        </div>
+        <div class="period-btn" onclick="setPeriod('eggs','午後')" id="eggs-pm">
+          🌙 午後<div class="period-dot" id="dot-eggs-pm"></div>
+        </div>
+      </div>
+      <div class="section-label">
+        採卵数（個）
+        <span class="loaded-label" id="loaded-eggs">読込済</span>
+      </div>
+      <div class="room-grid" id="eggs-grid"></div>
+      <div class="total-bar" id="eggs-total-bar">
+        <div class="total-bar-label">📦 本日合計</div>
+        <div><span class="total-bar-value" id="eggs-total-val">－</span><span class="total-bar-unit">個</span></div>
+      </div>
+    </div>
+
+    <!-- 餌タブ -->
+    <div class="tab-panel" id="panel-feed">
+      <div class="period-toggle">
+        <div class="period-btn active" onclick="setPeriod('feed','午前')" id="feed-am">
+          ☀️ 午前<div class="period-dot" id="dot-feed-am"></div>
+        </div>
+        <div class="period-btn" onclick="setPeriod('feed','午後')" id="feed-pm">
+          🌙 午後<div class="period-dot" id="dot-feed-pm"></div>
+        </div>
+      </div>
+      <button class="copy-prev-btn" id="copyPrevFeedBtn" onclick="copyPrevFeed()" style="display:none">📋 前日の餌をコピー</button>
+      <div class="section-label">
+        餌の量（kg）
+        <span class="loaded-label" id="loaded-feed">読込済</span>
+      </div>
+      <div class="room-grid" id="feed-grid"></div>
+      <div class="total-bar" id="feed-total-bar">
+        <div class="total-bar-label">📦 本日合計</div>
+        <div><span class="total-bar-value" id="feed-total-val">－</span><span class="total-bar-unit">kg</span></div>
+      </div>
+    </div>
+
+    <!-- 死鶏タブ -->
+    <div class="tab-panel" id="panel-dead">
+      <div class="section-label">
+        死鶏数（羽）
+        <span class="loaded-label" id="loaded-dead">読込済</span>
+      </div>
+      <div class="room-grid dead-grid" id="dead-grid"></div>
+
+      <div class="dead-monthly-bar" id="dead-monthly-bar" style="display:none">
+        <div class="dead-monthly-title">📅 直近30日の累計死鶏数</div>
+        <div class="dead-monthly-grid" id="dead-monthly-grid"></div>
+        <div class="dead-monthly-total">30日合計：<span id="dead-monthly-total-val">0</span> 羽</div>
+      </div>
+    </div>
+
+    <!-- サマリータブ -->
+    <div class="tab-panel summary-panel" id="panel-summary">
+      <div id="summary-loading" class="summary-loading">📊 読み込み中...</div>
+      <div id="summary-body" style="display:none">
+        <div class="summary-period-toggle">
+          <div class="summary-period-btn active" onclick="setSummaryPeriod(7)"  id="sp-7">7日</div>
+          <div class="summary-period-btn"        onclick="setSummaryPeriod(30)" id="sp-30">30日</div>
+        </div>
+        <div class="summary-stats" style="grid-template-columns:1fr 1fr;">
+          <div class="stat-card">
+            <div class="stat-card-label">採卵 日平均</div>
+            <div class="stat-card-value stat-eggs" id="avg-eggs">－</div>
+            <div class="stat-card-unit">個</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-label">採卵 期間合計</div>
+            <div class="stat-card-value stat-eggs" id="sum-eggs">－</div>
+            <div class="stat-card-unit">個</div>
+          </div>
+        </div>
+        <div class="chart-block">
+          <div class="chart-block-title">
+            🥚 採卵数（個）
+            <span class="chart-block-avg" id="chart-eggs-label"></span>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-eggs" class="chart-canvas"></canvas></div>
+        </div>
+      </div>
+
+      <!-- メモ履歴セクション -->
+      <div class="history-section">
+        <div class="history-section-header">
+          <span class="history-section-title">📝 メモ履歴（直近30日）</span>
+          <button class="history-load-btn" id="historyLoadBtn" onclick="loadHistory()">読み込む</button>
+        </div>
+        <div id="memoHistoryList">
+          <div class="history-empty">「読み込む」を押してください</div>
+        </div>
+      </div>
+
+      <!-- 入力履歴セクション -->
+      <div class="history-section">
+        <div class="history-section-header">
+          <span class="history-section-title">📋 入力履歴（直近3日）</span>
+        </div>
+        <div id="historyList">
+          <div class="history-empty">「読み込む」を押してください</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-version">ver 46</div>
+  </div><!-- /content -->
+
+  <!-- BOTTOM BAR -->
+  <div class="bottom-bar" id="bottomBar">
+    <div class="reload-bar">
+      <span class="reload-time" id="lastFetchLabel">最終取得: －</span>
+    </div>
+    <div class="bottom-btn-row">
+      <button class="reload-btn-small" onclick="reloadCurrentData()">↺</button>
+      <button class="btn-clear" onclick="clearCurrent()">クリア</button>
+      <button class="btn-save" id="saveBtn" onclick="saveData()">💾 保存する</button>
+    </div>
+  </div>
+
+  <!-- WORKER MODAL -->
+  <div class="modal-overlay" id="workerModal" onclick="hideWorkerModal(event)">
+    <div class="modal-sheet">
+      <div class="modal-title">入力者を変更</div>
+      <div class="worker-list" id="workerList"></div>
+    </div>
+  </div>
+
+  <!-- 入力漏れチェックモーダル -->
+  <div class="check-modal-overlay" id="checkModal">
+    <div class="check-modal-sheet">
+      <div class="check-modal-title">⚠️ 入力漏れがあります</div>
+      <div class="check-modal-sub">以下の項目が未入力です。<br>このまま保存しますか？</div>
+      <div id="check-modal-body"></div>
+      <div class="check-modal-btns">
+        <button class="check-btn-cancel" onclick="closeCheckModal()">戻って入力する</button>
+        <button class="check-btn-save"   onclick="forceSave()">このまま保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 未送信データモーダル -->
+  <div class="pending-modal-overlay" id="pendingModal" onclick="hidePendingModal(event)">
+    <div class="pending-modal-sheet">
+      <div class="pending-modal-header">
+        <span class="pending-modal-title">📤 未送信データ</span>
+        <button class="pending-close-btn" onclick="hidePendingModal()">✕</button>
+      </div>
+      <div id="pendingList"></div>
+      <button class="sync-all-btn" id="syncAllBtn" onclick="syncAllPending()" style="display:none">すべて送信する</button>
+    </div>
+  </div>
+
+</div><!-- /mainApp -->
+
+<!-- 部屋別履歴モーダル -->
+<div class="room-hist-overlay" id="roomHistModal" onclick="hideRoomHistory(event)">
+  <div class="room-hist-sheet">
+    <div class="room-hist-header">
+      <span class="room-hist-title" id="roomHistTitle"></span>
+      <button class="room-hist-close" onclick="hideRoomHistory()">✕</button>
+    </div>
+    <div id="roomHistBody"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+</div>
+
+<script>
+const ROOMS = ['1~3番','4番','6番','7番','8番','9番','10番','隔離'];
+
+let currentWorker = '';
+let currentDate   = '';
+let workers       = [];
+
+const data = {
+  eggs: { '午前': {}, '午後': {} },
+  feed: { '午前': {}, '午後': {} },
+  dead: {},
+  memo: { eggs: {}, feed: {}, dead: {} }
+};
+let eggsPeriod = '午前';
+let feedPeriod = '午前';
+let currentTab = 'eggs'; // 現在アクティブなタブ
+const dataCache = {};       // 'yyyy-MM-dd' → loaded data object（キャッシュ）
+const deadMonthlyCache = {}; // 'yyyy-MM-dd' → deadMonthlyData object
+const feedYesterdaySet = new Set(); // 前日フォールバックで読み込まれた未確定の餌値 'period_room'
+let prevFeedData = { '午前': {}, '午後': {} }; // 前日の餌データ（コピーボタン用）
+const feedSavedPeriods = new Set(); // 保存済みの時間帯（コピーボタン非表示判定用）
+let lastFetchTime = null;
+const RELOAD_THRESHOLD = 5 * 60 * 1000; // 5分
+
+// ── オフライン保存キュー ──
+const PENDING_KEY = 'poultry_pending';
+function getPending() {
+  try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '[]'); } catch(e) { return []; }
+}
+function savePending(payload) {
+  const list = getPending();
+  list.push({
+    id: Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+    createdAt: new Date().toISOString(),
+    payload
+  });
+  localStorage.setItem(PENDING_KEY, JSON.stringify(list));
+  updatePendingBadge();
+}
+function removePending(id) {
+  const list = getPending().filter(i => i.id !== id);
+  localStorage.setItem(PENDING_KEY, JSON.stringify(list));
+  updatePendingBadge();
+}
+function updatePendingBadge() {
+  const n = getPending().length;
+  const btn = document.getElementById('pendingBtn');
+  const countEl = document.getElementById('pendingCount');
+  if (btn) btn.style.display = n > 0 ? 'flex' : 'none';
+  if (countEl) countEl.textContent = n;
+}
+
+window.onload = function() {
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth()+1).padStart(2,'0');
+  const d = String(today.getDate()).padStart(2,'0');
+  document.getElementById('dateInput').value = `${y}-${m}-${d}`;
+  updatePendingBadge();
+
+  // 電波回復時に自動同期
+  window.addEventListener('online', () => {
+    const list = getPending();
+    if (list.length > 0) {
+      showToast(`📶 電波回復 – ${list.length}件を同期します`, 'info');
+      setTimeout(syncAllPending, 1000);
+    }
+  });
+
+  google.script.run
+    .withSuccessHandler(ws => {
+      workers = ws;
+      const sel = document.getElementById('workerSelect');
+      sel.innerHTML = '<option value="">入力者を選択</option>';
+      ws.forEach(w => {
+        const opt = document.createElement('option');
+        opt.value = w; opt.textContent = w;
+        sel.appendChild(opt);
+      });
+    })
+    .withFailureHandler(() => {
+      document.getElementById('workerSelect').innerHTML = '<option value="">取得失敗</option>';
+    })
+    .getWorkers();
+
+  buildGrid('eggs-grid', 'eggs', '個');
+  buildGrid('feed-grid', 'feed', 'kg', true);
+  buildDeadGrid();
+};
+
+function buildGrid(containerId, type, unit, decimal = false) {
+  const container = document.getElementById(containerId);
+  ROOMS.forEach(room => {
+    const card = document.createElement('div');
+    card.className = 'room-card';
+    card.id = `card-${type}-${room}`;
+    const feedStatusHtml = type === 'feed'
+      ? `<span class="feed-status" id="feed-status-${room}"></span>`
+      : '';
+    const subHtml = type === 'eggs'
+      ? `<div class="room-sub" id="eggs-sub-${room}"></div>`
+      : `<div class="room-unit">${unit}</div>`;
+    card.innerHTML = `
+      <div class="room-label" onclick="showRoomHistory('${type}','${room}')">
+        <div class="room-loaded-dot" id="dot-card-${type}-${room}"></div>
+        ${room}${feedStatusHtml}
+        <span class="room-hist-icon">›</span>
+      </div>
+      <input class="room-input" type="number"
+        inputmode="${decimal ? 'decimal' : 'numeric'}"
+        ${decimal ? '' : 'pattern="[0-9]*"'}
+        placeholder="0" id="input-${type}-${room}"
+        oninput="onInput('${type}','${room}',this.value)"
+        onfocus="this.select()">
+      ${subHtml}
+      <div class="room-yesterday" id="yesterday-${type}-${room}"></div>
+      <textarea class="room-memo" rows="1"
+        placeholder="メモ" id="memo-${type}-${room}"
+        oninput="onMemoInput('${type}','${room}',this.value);autoResize(this)"></textarea>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function buildDeadGrid() {
+  const container = document.getElementById('dead-grid');
+  ROOMS.forEach(room => {
+    const card = document.createElement('div');
+    card.className = 'room-card dead-card';
+    card.id = `card-dead-${room}`;
+    card.innerHTML = `
+      <div class="room-label" onclick="showRoomHistory('dead','${room}')">
+        <div class="room-loaded-dot" id="dot-card-dead-${room}"></div>
+        ${room}
+        <span class="room-hist-icon">›</span>
+      </div>
+      <input class="room-input" type="number" inputmode="numeric" pattern="[0-9]*"
+        placeholder="0" id="input-dead-${room}"
+        oninput="onDeadInput('${room}',this.value)"
+        onfocus="this.select()">
+      <div class="room-unit">羽</div>
+      <div class="room-monthly" id="monthly-dead-${room}"></div>
+      <div class="room-yesterday" id="yesterday-dead-${room}"></div>
+      <textarea class="room-memo" rows="1"
+        placeholder="メモ" id="memo-dead-${room}"
+        oninput="onMemoInput('dead','${room}',this.value);autoResize(this)"></textarea>
+    `;
+    container.appendChild(card);
+  });
+}
+
+// ── 日付ユーティリティ ──
+function fmtDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// ← → ボタン
+function navigateDate(delta) {
+  const d = new Date(currentDate + 'T00:00:00');
+  d.setDate(d.getDate() + delta);
+  const newDate = fmtDate(d);
+  if (newDate > fmtDate(new Date())) return;
+  document.getElementById('headerDateInput').value = newDate;
+  onDateChange(newDate);
+}
+
+// バックグラウンドで複数日をプリフェッチ
+function prefetchDates(dates) {
+  if (!dates.length) return;
+  google.script.run
+    .withSuccessHandler(res => { if (res.success) Object.assign(dataCache, res.data); })
+    .withFailureHandler(() => {})
+    .loadDataRange(dates);
+}
+
+// 現在日付の前後3日でキャッシュ未取得の日をまとめて取得
+function prefetchAround(centerDate) {
+  const today = fmtDate(new Date());
+  const needed = [];
+  for (let i = -3; i <= 3; i++) {
+    if (i === 0) continue;
+    const d = new Date(centerDate + 'T00:00:00');
+    d.setDate(d.getDate() + i);
+    const ds = fmtDate(d);
+    if (ds <= today && !(ds in dataCache)) needed.push(ds);
+  }
+  prefetchDates(needed);
+}
+
+function startApp() {
+  const w = document.getElementById('workerSelect').value;
+  const d = document.getElementById('dateInput').value;
+  if (!w) { showToast('入力者を選択してください', 'error'); return; }
+  if (!d) { showToast('日付を選択してください', 'error'); return; }
+
+  currentWorker = w;
+  currentDate   = d;
+
+  setHeaderDate(d);
+  document.getElementById('headerDateInput').value = d;
+  document.getElementById('workerBadge').textContent = w;
+  updateWorkerList();
+
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+
+  // 今日 + 前6日を一括取得（GAS呼び出し1回で済む）
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const dt = new Date(d + 'T00:00:00');
+    dt.setDate(dt.getDate() - i);
+    dates.push(fmtDate(dt));
+  }
+  showLoading(true);
+  google.script.run
+    .withSuccessHandler(res => {
+      showLoading(false);
+      if (res.success) {
+        Object.assign(dataCache, res.data);
+        feedSavedPeriods.clear();
+        if (dataCache[d]?.hasData) applyLoadedData(dataCache[d]);
+        else { hideBanner(); clearAllBadges(); }
+        setPrevFeedData(d);
+        updateAllYesterdayHints(d);
+        updateLastFetchLabel();
+      }
+    })
+    .withFailureHandler(() => {
+      showLoading(false);
+      showToast('データ読み込み失敗', 'error');
+    })
+    .loadDataRange(dates);
+
+  loadDeadMonthly(d);
+  // 今日なので「次へ」は無効
+  const nextBtn = document.getElementById('nextDayBtn');
+  if (nextBtn) nextBtn.disabled = true;
+
+  // 起動時に未送信データがあれば自動同期
+  setTimeout(() => {
+    const list = getPending();
+    if (list.length > 0 && navigator.onLine) {
+      showToast(`📤 未送信 ${list.length}件を同期中...`, 'info');
+      syncAllPending();
+    }
+  }, 2500);
+}
+
+function onDateChange(newDate) {
+  if (!newDate) return;
+  currentDate = newDate;
+  setHeaderDate(newDate);
+  resetAllData();
+  summaryData = null;
+  feedSavedPeriods.clear();
+  prevFeedData = { '午前': {}, '午後': {} };
+  updateCopyFeedBtn();
+
+  // 次へボタンの有効/無効
+  const nextBtn = document.getElementById('nextDayBtn');
+  if (nextBtn) nextBtn.disabled = (newDate >= fmtDate(new Date()));
+
+  // キャッシュがあれば即表示、なければサーバーから取得
+  if (newDate in dataCache) {
+    if (dataCache[newDate]?.hasData) applyLoadedData(dataCache[newDate]);
+    else { hideBanner(); clearAllBadges(); }
+    setPrevFeedData(newDate);
+    updateAllYesterdayHints(newDate);
+  } else {
+    fetchAndLoadData(newDate);
+  }
+
+  // 死鶏累計もキャッシュ優先
+  if (newDate in deadMonthlyCache) {
+    deadMonthlyData = deadMonthlyCache[newDate];
+    renderDeadMonthly();
+  } else {
+    loadDeadMonthly(newDate);
+  }
+
+  prefetchAround(newDate);
+}
+
+function setHeaderDate(dateStr) {
+  const [y, m, d] = dateStr.split('-');
+  document.getElementById('headerDateLabel').textContent = `${m}/${d}`;
+}
+
+function fetchAndLoadData(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() - 1);
+  const prevDate = fmtDate(d);
+
+  showLoading(true);
+  google.script.run
+    .withSuccessHandler(res => {
+      showLoading(false);
+      if (res.success) {
+        dataCache[dateStr] = res.data; // キャッシュに保存
+        if (res.data.hasData) applyLoadedData(res.data);
+        else { hideBanner(); clearAllBadges(); }
+        setPrevFeedData(dateStr);
+        updateAllYesterdayHints(dateStr);
+        updateLastFetchLabel();
+      }
+    })
+    .withFailureHandler(() => {
+      showLoading(false);
+      showToast('データ読み込み失敗', 'error');
+    })
+    .loadData(dateStr, prevDate);
+}
+
+function applyLoadedData(loaded) {
+  data.eggs = { '午前': {}, '午後': {} };
+  data.feed = { '午前': {}, '午後': {} };
+  data.dead = {};
+
+  ['午前','午後'].forEach(period => {
+    ROOMS.forEach(room => {
+      const ev = loaded.eggs[period]?.[room];
+      if (ev !== undefined && ev !== '') data.eggs[period][room] = String(ev);
+      const fv = loaded.feed[period]?.[room];
+      if (fv !== undefined && fv !== '') {
+        if (loaded.feedSource === 'yesterday') {
+          prevFeedData[period][room] = String(fv); // コピーボタン用に保持、入力欄には反映しない
+        } else {
+          data.feed[period][room] = String(fv);
+        }
+      }
+    });
+  });
+  ROOMS.forEach(room => {
+    const dv = loaded.dead?.[room];
+    if (dv !== undefined && dv !== '') data.dead[room] = String(dv);
+  });
+
+  data.memo = { eggs: {}, feed: {}, dead: {} };
+  if (loaded.memo) {
+    ['eggs','feed','dead'].forEach(type => {
+      ROOMS.forEach(room => {
+        const mv = loaded.memo[type]?.[room];
+        if (mv) {
+          data.memo[type][room] = mv;
+          const el = document.querySelector(`[id="memo-${type}-${room}"]`);
+          if (el) { el.value = mv; el.classList.add('has-memo'); autoResize(el); }
+        }
+      });
+    });
+  }
+
+  // 当日の保存済み餌データがある期間はコピーボタンを非表示にする
+  if (loaded.feedSource === 'today') {
+    ['午前','午後'].forEach(period => {
+      if (ROOMS.some(r => loaded.feed[period]?.[r] !== undefined && loaded.feed[period]?.[r] !== '')) {
+        feedSavedPeriods.add(period);
+      }
+    });
+  }
+
+  refreshGrid('eggs', eggsPeriod);
+  refreshGrid('feed', feedPeriod);
+  refreshDeadGrid();
+
+  window._feedSource = loaded.feedSource;
+
+  updateAllBadges();
+  refreshAllTotals();
+  updateCopyFeedBtn();
+  showBanner(loaded.feedSource);
+}
+
+function refreshGrid(type, period) {
+  ROOMS.forEach(room => {
+    const v = data[type][period]?.[room] ?? '';
+    const el   = document.getElementById(`input-${type}-${room}`);
+    const card = document.getElementById(`card-${type}-${room}`);
+    const dot  = document.getElementById(`dot-card-${type}-${room}`);
+    if (!el) return;
+    el.value = v;
+    card.classList.toggle('has-value',    v !== '');
+    card.classList.toggle('loaded-value', v !== '');
+    dot?.classList.toggle('show', v !== '');
+    const mv = data.memo[type]?.[room] ?? '';
+    const mel = document.querySelector(`[id="memo-${type}-${room}"]`);
+    if (mel) { mel.value = mv; mel.classList.toggle('has-memo', mv !== ''); autoResize(mel); }
+  });
+}
+
+function refreshDeadGrid() {
+  ROOMS.forEach(room => {
+    const v    = data.dead[room] ?? '';
+    const el   = document.getElementById(`input-dead-${room}`);
+    const card = document.getElementById(`card-dead-${room}`);
+    const dot  = document.getElementById(`dot-card-dead-${room}`);
+    if (!el) return;
+    el.value = v;
+    card.classList.toggle('has-value',    v !== '');
+    card.classList.toggle('loaded-value', v !== '');
+    dot?.classList.toggle('show', v !== '');
+  });
+}
+
+function updateAllBadges() {
+  const hasEggs = ROOMS.some(r => data.eggs['午前'][r] || data.eggs['午後'][r]);
+  const hasFeed = ROOMS.some(r => data.feed['午前'][r] || data.feed['午後'][r]);
+  const hasDead = ROOMS.some(r => data.dead[r]);
+
+  document.getElementById('badge-eggs').classList.toggle('show', hasEggs);
+  document.getElementById('badge-feed').classList.toggle('show', hasFeed);
+  document.getElementById('badge-dead').classList.toggle('show', hasDead);
+
+  document.getElementById('loaded-eggs').classList.toggle('show', hasEggs);
+  document.getElementById('loaded-feed').classList.toggle('show', hasFeed);
+  document.getElementById('loaded-dead').classList.toggle('show', hasDead);
+
+  const feedLabelEl = document.getElementById('loaded-feed');
+  feedLabelEl.textContent = (window._feedSource === 'yesterday') ? '前日値' : '読込済';
+
+  ['eggs','feed'].forEach(type => {
+    ['午前','午後'].forEach(period => {
+      const key   = period === '午前' ? 'am' : 'pm';
+      const dotEl = document.getElementById(`dot-${type}-${key}`);
+      const has   = ROOMS.some(r => data[type][period][r]);
+      dotEl?.classList.toggle('show', has);
+    });
+  });
+}
+
+function clearAllBadges() {
+  ['eggs','feed','dead'].forEach(t => {
+    document.getElementById(`badge-${t}`)?.classList.remove('show');
+    document.getElementById(`loaded-${t}`)?.classList.remove('show');
+  });
+  ['eggs','feed'].forEach(type => {
+    ['am','pm'].forEach(k => document.getElementById(`dot-${type}-${k}`)?.classList.remove('show'));
+  });
+  ROOMS.forEach(room => {
+    ['eggs','feed','dead'].forEach(t => {
+      const key = t === 'dead' ? `dot-card-dead-${room}` : `dot-card-${t}-${room}`;
+      document.getElementById(key)?.classList.remove('show');
+    });
+  });
+}
+
+function showBanner(feedSource) {
+  let msg = '既存データを読み込みました（編集して再保存できます）';
+  if (feedSource === 'yesterday') {
+    msg = '📋 前日の餌データをコピーできます（餌タブのボタンを押してください）';
+  }
+  document.getElementById('loadBannerText').textContent = msg;
+  document.getElementById('loadBanner').classList.add('show');
+  document.getElementById('tabs').classList.add('with-banner');
+  document.getElementById('mainContent').classList.add('with-banner');
+  const duration = feedSource === 'yesterday' ? 5000 : 4000;
+  setTimeout(() => {
+    document.getElementById('loadBanner').classList.remove('show');
+    document.getElementById('tabs').classList.remove('with-banner');
+    document.getElementById('mainContent').classList.remove('with-banner');
+  }, duration);
+}
+
+function hideBanner() {
+  document.getElementById('loadBanner').classList.remove('show');
+  document.getElementById('tabs').classList.remove('with-banner');
+  document.getElementById('mainContent').classList.remove('with-banner');
+}
+
+// ── 昨日ヒント & 部屋別履歴 ──
+function updateAllYesterdayHints(dateStr) {
+  ['eggs','feed','dead'].forEach(type => updateYesterdayHints(type, dateStr));
+}
+
+function updateYesterdayHints(type, dateStr) {
+  const prevDt = new Date(dateStr + 'T00:00:00');
+  prevDt.setDate(prevDt.getDate() - 1);
+  const prev = dataCache[fmtDate(prevDt)];
+  ROOMS.forEach(room => {
+    const el = document.getElementById(`yesterday-${type}-${room}`);
+    if (!el) return;
+    if (!prev) { el.textContent = ''; return; }
+    let text = '';
+    if (type === 'dead') {
+      const v = prev.dead?.[room];
+      if (v !== undefined && v !== '') text = `昨日 ${v}羽`;
+    } else {
+      const am = parseFloat(prev[type]?.['午前']?.[room]) || 0;
+      const pm = parseFloat(prev[type]?.['午後']?.[room]) || 0;
+      if (am > 0 || pm > 0) {
+        const unit = type === 'eggs' ? '個' : 'kg';
+        const total = type === 'feed' ? (am + pm).toFixed(1) : (am + pm);
+        text = `昨日 ${total}${unit}`;
+      }
+    }
+    el.textContent = text;
+  });
+}
+
+function showRoomHistory(type, room) {
+  const typeLabel = { eggs: '採卵数', feed: '餌の量', dead: '死鶏数' };
+  const unit      = { eggs: '個',    feed: 'kg',     dead: '羽' };
+  document.getElementById('roomHistTitle').textContent = `${room}　${typeLabel[type]}`;
+
+  // 直近7日分のデータ収集（index 0 = 今日, 6 = 6日前）
+  const days = [];
+  for (let i = 0; i <= 6; i++) {
+    const dt = new Date(currentDate + 'T00:00:00');
+    dt.setDate(dt.getDate() - i);
+    const ds = fmtDate(dt);
+    const [, m, d] = ds.split('-');
+    const label = i === 0 ? `${parseInt(m)}/${parseInt(d)}（今日）` : `${parseInt(m)}/${parseInt(d)}`;
+    const entry = dataCache[ds];
+    let val = null;
+    if (entry) {
+      if (type === 'dead') {
+        const v = entry.dead?.[room];
+        if (v !== undefined && v !== '') val = Number(v);
+      } else {
+        const am = parseFloat(entry[type]?.['午前']?.[room]) || 0;
+        const pm = parseFloat(entry[type]?.['午後']?.[room]) || 0;
+        if (entry[type]?.['午前']?.[room] !== undefined || entry[type]?.['午後']?.[room] !== undefined) {
+          val = am + pm;
+        }
+      }
+    }
+    days.push({ label, val, isToday: i === 0 });
+  }
+
+  // 今日のデータはメモリ上の最新値を優先
+  if (type === 'dead') {
+    const v = data.dead[room];
+    if (v !== undefined && v !== '') days[0].val = Number(v);
+  } else {
+    const am = parseFloat(data[type]['午前'][room]) || 0;
+    const pm = parseFloat(data[type]['午後'][room]) || 0;
+    if (data[type]['午前'][room] !== undefined || data[type]['午後'][room] !== undefined) {
+      days[0].val = am + pm;
+    }
+  }
+
+  const html = days.map((day, idx) => {
+    const valText = day.val !== null
+      ? (type === 'feed' ? day.val.toFixed(1) : day.val) + unit[type]
+      : '—';
+    let trendHtml = '';
+    const prev = days[idx + 1];
+    if (day.val !== null && prev?.val !== null && prev?.val !== undefined) {
+      const diff = day.val - prev.val;
+      if (diff > 0)      trendHtml = `<span class="hist-trend up">▲${type==='feed'?diff.toFixed(1):diff}</span>`;
+      else if (diff < 0) trendHtml = `<span class="hist-trend dn">▼${type==='feed'?Math.abs(diff).toFixed(1):Math.abs(diff)}</span>`;
+      else               trendHtml = `<span class="hist-trend fl">→</span>`;
+    }
+    return `<div class="hist-row${day.isToday ? ' hist-today' : ''}">
+      <span class="hist-date">${day.label}</span>
+      <span class="hist-val">${valText}</span>
+      ${trendHtml}
+    </div>`;
+  }).join('');
+
+  document.getElementById('roomHistBody').innerHTML = html;
+  document.getElementById('roomHistModal').classList.add('show');
+}
+
+function hideRoomHistory(e) {
+  if (e && e.target !== document.getElementById('roomHistModal')) return;
+  document.getElementById('roomHistModal').classList.remove('show');
+}
+
+// ── 前日餌コピーボタン ──
+function setPrevFeedData(dateStr) {
+  const prevDt = new Date(dateStr + 'T00:00:00');
+  prevDt.setDate(prevDt.getDate() - 1);
+  const prevEntry = dataCache[fmtDate(prevDt)];
+  if (prevEntry?.feed) {
+    // キャッシュに前日データがある場合のみ上書き（ない場合はapplyLoadedDataで設定済みの値を保持）
+    prevFeedData = { '午前': {}, '午後': {} };
+    ['午前','午後'].forEach(period => {
+      ROOMS.forEach(room => {
+        const v = prevEntry.feed[period]?.[room];
+        if (v !== undefined && v !== '') prevFeedData[period][room] = String(v);
+      });
+    });
+  }
+  updateCopyFeedBtn();
+}
+
+function updateCopyFeedBtn() {
+  const btn = document.getElementById('copyPrevFeedBtn');
+  if (!btn) return;
+  const hasPrev = ROOMS.some(r => prevFeedData[feedPeriod]?.[r] !== undefined && prevFeedData[feedPeriod]?.[r] !== '');
+  btn.style.display = (hasPrev && !feedSavedPeriods.has(feedPeriod)) ? 'block' : 'none';
+}
+
+function copyPrevFeed() {
+  ROOMS.forEach(room => {
+    const v = prevFeedData[feedPeriod]?.[room];
+    if (v === undefined || v === '') return;
+    data.feed[feedPeriod][room] = v;
+    const el   = document.getElementById(`input-feed-${room}`);
+    const card = document.getElementById(`card-feed-${room}`);
+    const dot  = document.getElementById(`dot-card-feed-${room}`);
+    if (el) el.value = v;
+    card?.classList.add('has-value');
+    card?.classList.remove('loaded-value');
+    dot?.classList.toggle('show', false);
+    feedYesterdaySet.add(`${feedPeriod}_${room}`); // 前日値バッジを表示するためセット
+  });
+  updateFeedTotal();
+  updateFeedStatusBadges();
+  const periodKey = feedPeriod === '午前' ? 'am' : 'pm';
+  document.getElementById(`dot-feed-${periodKey}`)
+    ?.classList.toggle('show', ROOMS.some(r => data.feed[feedPeriod][r]));
+}
+
+function setPeriod(type, period) {
+  if (type === 'eggs') {
+    eggsPeriod = period;
+    document.getElementById('eggs-am').classList.toggle('active', period === '午前');
+    document.getElementById('eggs-pm').classList.toggle('active', period === '午後');
+  } else {
+    feedPeriod = period;
+    document.getElementById('feed-am').classList.toggle('active', period === '午前');
+    document.getElementById('feed-pm').classList.toggle('active', period === '午後');
+  }
+  refreshGrid(type, period);
+  if (type === 'feed') { updateFeedStatusBadges(); updateCopyFeedBtn(); }
+}
+
+function onInput(type, room, val) {
+  const period = type === 'eggs' ? eggsPeriod : feedPeriod;
+  data[type][period][room] = val;
+  // ユーザーが餌を入力したら前日値フラグを解除
+  if (type === 'feed') feedYesterdaySet.delete(`${period}_${room}`);
+  const card = document.getElementById(`card-${type}-${room}`);
+  const dot  = document.getElementById(`dot-card-${type}-${room}`);
+  card?.classList.toggle('has-value', val !== '');
+  card?.classList.remove('loaded-value');
+  dot?.classList.toggle('show', false);
+  const periodKey = period === '午前' ? 'am' : 'pm';
+  const hasPeriod = ROOMS.some(r => data[type][period][r]);
+  document.getElementById(`dot-${type}-${periodKey}`)?.classList.toggle('show', hasPeriod);
+  if (type === 'eggs') { updateEggsRoomSub(room); updateEggsTotal(); }
+  if (type === 'feed') { updateFeedTotal(); }
+}
+
+function onDeadInput(room, val) {
+  data.dead[room] = val;
+  const card = document.getElementById(`card-dead-${room}`);
+  const dot  = document.getElementById(`dot-card-dead-${room}`);
+  card?.classList.toggle('has-value', val !== '');
+  card?.classList.remove('loaded-value');
+  dot?.classList.toggle('show', false);
+}
+
+function onMemoInput(type, room, val) {
+  data.memo[type][room] = val;
+  const el = document.querySelector(`[id="memo-${type}-${room}"]`);
+  el?.classList.toggle('has-memo', val !== '');
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+function resetAllData() {
+  window._feedSource = 'none';
+  feedYesterdaySet.clear();
+  data.eggs = { '午前': {}, '午後': {} };
+  data.feed = { '午前': {}, '午後': {} };
+  data.dead = {};
+  data.memo = { eggs: {}, feed: {}, dead: {} };
+  ['eggs','feed','dead'].forEach(type => {
+    ROOMS.forEach(room => {
+      const el = document.querySelector(`[id="memo-${type}-${room}"]`);
+      if (el) { el.value = ''; el.classList.remove('has-memo'); autoResize(el); }
+    });
+  });
+  ROOMS.forEach(room => {
+    ['eggs','feed'].forEach(t => {
+      const el = document.getElementById(`input-${t}-${room}`);
+      if (el) el.value = '';
+      const card = document.getElementById(`card-${t}-${room}`);
+      card?.classList.remove('has-value','loaded-value');
+      document.getElementById(`dot-card-${t}-${room}`)?.classList.remove('show');
+    });
+    const del = document.getElementById(`input-dead-${room}`);
+    if (del) del.value = '';
+    document.getElementById(`card-dead-${room}`)?.classList.remove('has-value','loaded-value');
+    document.getElementById(`dot-card-dead-${room}`)?.classList.remove('show');
+  });
+  clearAllBadges();
+  ROOMS.forEach(r => {
+    const sub = document.getElementById(`eggs-sub-${r}`);
+    if (sub) { sub.textContent = ''; sub.classList.remove('has-total'); }
+    const fs = document.getElementById(`feed-status-${r}`);
+    if (fs) fs.className = 'feed-status';
+  });
+  const etv = document.getElementById('eggs-total-val');
+  if (etv) etv.textContent = '－';
+  const ftv = document.getElementById('feed-total-val');
+  if (ftv) ftv.textContent = '－';
+}
+
+function clearCurrent() {
+  if (!confirm('現在のタブの入力をクリアしますか？')) return;
+  const activePanel = document.querySelector('.tab-panel.active').id;
+  if (activePanel === 'panel-eggs') {
+    data.eggs[eggsPeriod] = {};
+    ROOMS.forEach(r => {
+      const el = document.getElementById(`input-eggs-${r}`);
+      if (el) el.value = '';
+      document.getElementById(`card-eggs-${r}`)?.classList.remove('has-value','loaded-value');
+      document.getElementById(`dot-card-eggs-${r}`)?.classList.remove('show');
+    });
+  } else if (activePanel === 'panel-feed') {
+    data.feed[feedPeriod] = {};
+    ROOMS.forEach(r => {
+      const el = document.getElementById(`input-feed-${r}`);
+      if (el) el.value = '';
+      document.getElementById(`card-feed-${r}`)?.classList.remove('has-value','loaded-value');
+      document.getElementById(`dot-card-feed-${r}`)?.classList.remove('show');
+    });
+  } else {
+    data.dead = {};
+    ROOMS.forEach(r => {
+      const el = document.getElementById(`input-dead-${r}`);
+      if (el) el.value = '';
+      document.getElementById(`card-dead-${r}`)?.classList.remove('has-value','loaded-value');
+      document.getElementById(`dot-card-dead-${r}`)?.classList.remove('show');
+    });
+  }
+  updateAllBadges();
+  refreshAllTotals();
+}
+
+function saveData() {
+  const missing = checkMissing(currentTab);
+  if (missing.hasMissing) {
+    showCheckModal(missing);
+    return;
+  }
+  doSave();
+}
+
+function collectPayload(tab) {
+  const eggs = [], feed = [], dead = [];
+  if (tab === 'eggs') {
+    ROOMS.forEach(room => {
+      const ev = data.eggs[eggsPeriod][room];
+      if (ev !== undefined && ev !== '') eggs.push({period: eggsPeriod, room, value: ev});
+    });
+  }
+  if (tab === 'feed') {
+    // 現在表示中の期間のみ保存（修正の有無にかかわらず）
+    ROOMS.forEach(room => {
+      const fv = data.feed[feedPeriod][room];
+      if (fv !== undefined && fv !== '') feed.push({period: feedPeriod, room, value: fv});
+    });
+  }
+  if (tab === 'dead') {
+    ROOMS.forEach(room => {
+      const dv = data.dead[room];
+      if (dv !== undefined && dv !== '') dead.push({room, value: dv});
+    });
+  }
+  const memos = [];
+  ROOMS.forEach(room => {
+    const v = data.memo[tab]?.[room];
+    if (v && v !== '') memos.push({ tab, room, text: v });
+  });
+  return { eggs, feed, dead, memos };
+}
+
+function checkMissing(tab) {
+  const missing = { hasMissing: false, eggs: [], feed: [] };
+  if (tab === 'eggs') {
+    ROOMS.forEach(room => {
+      const v = data.eggs[eggsPeriod][room];
+      if (v === undefined || v === '') {
+        missing.eggs.push(`${room} ${eggsPeriod}`);
+        missing.hasMissing = true;
+      }
+    });
+  }
+  if (tab === 'feed') {
+    ROOMS.forEach(room => {
+      const v = data.feed[feedPeriod][room];
+      if (v === undefined || v === '') {
+        missing.feed.push(`${room} ${feedPeriod}`);
+        missing.hasMissing = true;
+      }
+    });
+  }
+  // dead タブは 0 でも有効なので入力漏れチェックなし
+  return missing;
+}
+
+function showCheckModal(missing) {
+  const body = document.getElementById('check-modal-body');
+  let html = '';
+  if (missing.eggs.length > 0) {
+    html += `<div class="check-group">
+      <div class="check-group-title">🥚 採卵数 未入力</div>
+      <div class="check-items">${missing.eggs.map(s=>`<div class="check-item">${s}</div>`).join('')}</div>
+    </div>`;
+  }
+  if (missing.feed.length > 0) {
+    html += `<div class="check-group">
+      <div class="check-group-title">🌾 餌の量 未入力</div>
+      <div class="check-items">${missing.feed.map(s=>`<div class="check-item">${s}</div>`).join('')}</div>
+    </div>`;
+  }
+  body.innerHTML = html;
+  document.getElementById('checkModal').classList.add('show');
+}
+
+function closeCheckModal() {
+  document.getElementById('checkModal').classList.remove('show');
+}
+
+function forceSave() {
+  closeCheckModal();
+  doSave();
+}
+
+function doSave() {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  showLoading(true);
+
+  const { eggs, feed, dead, memos } = collectPayload(currentTab);
+
+  if (eggs.length === 0 && feed.length === 0 && dead.length === 0) {
+    showLoading(false);
+    btn.disabled = false;
+    showToast('入力データがありません', 'error');
+    return;
+  }
+
+  const payload = { date: currentDate, worker: currentWorker, eggs, feed, dead, memos };
+
+  // 電波なしは即座に端末保存（GAS呼び出しをスキップ）
+  if (!navigator.onLine) {
+    showLoading(false);
+    btn.disabled = false;
+    savePending(payload);
+    showToast('📶 電波なし – 端末に保存しました', 'info');
+    return;
+  }
+
+  let settled = false;
+
+  // 30秒でタイムアウト → 端末に保存（GASコールドスタートは最大20〜25秒かかる）
+  const timer = setTimeout(() => {
+    if (settled) return;
+    settled = true;
+    showLoading(false);
+    btn.disabled = false;
+    savePending(payload);
+    showToast('📶 タイムアウト – 端末に保存しました', 'info');
+  }, 30000);
+
+  google.script.run
+    .withSuccessHandler(res => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      showLoading(false);
+      btn.disabled = false;
+      if (res.success) {
+        showToast('✅ 保存しました！', 'success');
+        delete dataCache[currentDate];
+        delete deadMonthlyCache[currentDate];
+        historyData = null; // 保存後は履歴を再取得させる
+        loadDeadMonthly(currentDate);
+        // 保存したタブのカードのloaded-valueを解除
+        ROOMS.forEach(room => {
+          document.getElementById(`card-${currentTab}-${room}`)?.classList.remove('loaded-value');
+        });
+        if (currentTab === 'feed') {
+          // 保存した期間のみ feedYesterdaySet から除去
+          ROOMS.forEach(room => feedYesterdaySet.delete(`${feedPeriod}_${room}`));
+          window._feedSource = 'today';
+          updateFeedStatusBadges();
+          feedSavedPeriods.add(feedPeriod);
+          updateCopyFeedBtn();
+          const feedLabelEl = document.getElementById('loaded-feed');
+          if (feedLabelEl) feedLabelEl.textContent = '読込済';
+        }
+      } else {
+        savePending(payload);
+        showToast('📶 保存失敗 – 端末に保存しました', 'info');
+      }
+    })
+    .withFailureHandler(() => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      showLoading(false);
+      btn.disabled = false;
+      savePending(payload);
+      showToast('📶 保存失敗 – 端末に保存しました', 'info');
+    })
+    .saveData(payload);
+}
+
+// ── 未送信モーダル ──
+function showPendingModal() {
+  renderPendingList();
+  document.getElementById('pendingModal').classList.add('show');
+}
+function hidePendingModal(e) {
+  if (e && e.target !== document.getElementById('pendingModal')) return;
+  document.getElementById('pendingModal').classList.remove('show');
+}
+function renderPendingList() {
+  const list = getPending();
+  const container = document.getElementById('pendingList');
+  const syncBtn = document.getElementById('syncAllBtn');
+  if (!container) return;
+  if (list.length === 0) {
+    container.innerHTML = '<div class="pending-empty">未送信データはありません</div>';
+    if (syncBtn) syncBtn.style.display = 'none';
+    return;
+  }
+  if (syncBtn) syncBtn.style.display = 'block';
+  container.innerHTML = list.map(item => {
+    const dt = new Date(item.createdAt);
+    const timeStr = `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+    const p = item.payload;
+    const parts = [];
+    const uniqueRooms = (arr) => [...new Set((arr||[]).map(r => r.room))].length;
+    if (p.eggs?.length)  parts.push(`採卵 ${uniqueRooms(p.eggs)}鶏舎`);
+    if (p.feed?.length)  parts.push(`餌 ${uniqueRooms(p.feed)}鶏舎`);
+    if (p.dead?.length)  parts.push(`死鶏 ${uniqueRooms(p.dead)}鶏舎`);
+    const safeId = CSS.escape(item.id);
+    return `<div class="pending-item" id="pending-${item.id}">
+      <div class="pending-item-header">
+        <span class="pending-item-date">📅 ${p.date} ${timeStr}</span>
+        <span class="pending-item-worker">${p.worker}</span>
+      </div>
+      <div class="pending-item-summary">${parts.join(' · ') || 'メモのみ'}</div>
+      <div class="pending-item-actions">
+        <button class="pending-sync-btn" id="psync-${item.id}" onclick="syncOnePending('${item.id}')">📤 送信</button>
+        <button class="pending-del-btn" onclick="deletePending('${item.id}')">削除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function deletePending(id) {
+  if (!confirm('この未送信データを削除しますか？')) return;
+  removePending(id);
+  renderPendingList();
+}
+function syncOnePending(id) {
+  const list = getPending();
+  const item = list.find(i => i.id === id);
+  if (!item) return;
+  const btn = document.getElementById(`psync-${id}`);
+  if (btn) { btn.disabled = true; btn.textContent = '送信中...'; }
+  let done = false;
+  const timer = setTimeout(() => {
+    if (done) return; done = true;
+    if (btn) { btn.disabled = false; btn.textContent = '📤 送信'; }
+    showToast('タイムアウト – 電波を確認してください', 'error');
+  }, 30000);
+  google.script.run
+    .withSuccessHandler(res => {
+      if (done) return; done = true; clearTimeout(timer);
+      if (res.success) {
+        removePending(id);
+        delete dataCache[item.payload.date];
+        delete deadMonthlyCache[item.payload.date];
+        showToast('✅ 送信しました', 'success');
+        renderPendingList();
+      } else {
+        if (btn) { btn.disabled = false; btn.textContent = '📤 送信'; }
+        showToast('❌ 送信失敗', 'error');
+      }
+    })
+    .withFailureHandler(() => {
+      if (done) return; done = true; clearTimeout(timer);
+      if (btn) { btn.disabled = false; btn.textContent = '📤 送信'; }
+      showToast('❌ 送信失敗', 'error');
+    })
+    .saveData(item.payload);
+}
+function syncAllPending() {
+  const list = getPending();
+  if (list.length === 0) { showToast('未送信データはありません', 'info'); return; }
+  const btn = document.getElementById('syncAllBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '送信中...'; }
+  let synced = 0, failed = 0, total = list.length;
+  const checkDone = () => {
+    if (synced + failed < total) return;
+    if (btn) { btn.disabled = false; btn.textContent = 'すべて送信する'; }
+    if (synced > 0 && failed === 0) showToast(`✅ ${synced}件を送信しました`, 'success');
+    else if (synced > 0)            showToast(`✅ ${synced}件送信 / ❌ ${failed}件失敗`, 'error');
+    else                            showToast('送信失敗（電波を確認してください）', 'error');
+    renderPendingList();
+    updatePendingBadge();
+  };
+  list.forEach(item => {
+    let done = false;
+    const timer = setTimeout(() => {
+      if (done) return; done = true; failed++; checkDone();
+    }, 30000);
+    google.script.run
+      .withSuccessHandler(res => {
+        if (done) return; done = true; clearTimeout(timer);
+        if (res.success) {
+          removePending(item.id);
+          delete dataCache[item.payload.date];
+          delete deadMonthlyCache[item.payload.date];
+          synced++;
+        } else { failed++; }
+        checkDone();
+      })
+      .withFailureHandler(() => {
+        if (done) return; done = true; clearTimeout(timer);
+        failed++; checkDone();
+      })
+      .saveData(item.payload);
+  });
+}
+
+function showWorkerModal() {
+  document.getElementById('workerModal').classList.add('show');
+}
+function hideWorkerModal(e) {
+  if (e.target === document.getElementById('workerModal'))
+    document.getElementById('workerModal').classList.remove('show');
+}
+function updateWorkerList() {
+  const list = document.getElementById('workerList');
+  list.innerHTML = '';
+  workers.forEach(w => {
+    const item = document.createElement('div');
+    item.className = 'worker-item' + (w === currentWorker ? ' selected' : '');
+    item.textContent = w;
+    item.onclick = () => {
+      currentWorker = w;
+      document.getElementById('workerBadge').textContent = w;
+      document.querySelectorAll('.worker-item').forEach(el => el.classList.remove('selected'));
+      item.classList.add('selected');
+      setTimeout(() => document.getElementById('workerModal').classList.remove('show'), 300);
+    };
+    list.appendChild(item);
+  });
+}
+
+function updateEggsRoomSub(room) {
+  const am = parseFloat(data.eggs['午前'][room]) || 0;
+  const pm = parseFloat(data.eggs['午後'][room]) || 0;
+  const el = document.getElementById(`eggs-sub-${room}`);
+  if (!el) return;
+  if (am > 0 || pm > 0) {
+    el.textContent = `午前${am} + 午後${pm} = ${am + pm}個`;
+    el.classList.add('has-total');
+  } else {
+    el.textContent = '';
+    el.classList.remove('has-total');
+  }
+}
+
+function updateEggsTotal() {
+  let total = 0;
+  ROOMS.forEach(room => {
+    total += (parseFloat(data.eggs['午前'][room]) || 0)
+           + (parseFloat(data.eggs['午後'][room]) || 0);
+  });
+  const el = document.getElementById('eggs-total-val');
+  if (el) el.textContent = total > 0 ? total.toLocaleString() : '－';
+}
+
+function updateFeedTotal() {
+  let total = 0;
+  ROOMS.forEach(room => {
+    total += (parseFloat(data.feed['午前'][room]) || 0)
+           + (parseFloat(data.feed['午後'][room]) || 0);
+  });
+  const el = document.getElementById('feed-total-val');
+  if (el) el.textContent = total > 0 ? total.toFixed(1) : '－';
+}
+
+function updateFeedStatusBadges() {
+  ROOMS.forEach(room => {
+    const el = document.getElementById(`feed-status-${room}`);
+    if (!el) return;
+    // 現在表示中の期間のみをチェック
+    const val = data.feed[feedPeriod][room];
+    if (val === undefined || val === '') { el.className = 'feed-status'; return; }
+    if (feedYesterdaySet.has(`${feedPeriod}_${room}`)) {
+      el.className = 'feed-status prev'; el.textContent = '前日値';
+    } else {
+      el.className = 'feed-status saved'; el.textContent = '保存済み';
+    }
+  });
+}
+
+function refreshAllTotals() {
+  ROOMS.forEach(r => updateEggsRoomSub(r));
+  updateEggsTotal();
+  updateFeedTotal();
+  updateFeedStatusBadges();
+}
+
+let deadMonthlyData = {};
+
+function loadDeadMonthly(dateStr) {
+  google.script.run
+    .withSuccessHandler(res => {
+      if (res.success) {
+        deadMonthlyData = res.data;
+        deadMonthlyCache[dateStr] = res.data; // キャッシュに保存
+        renderDeadMonthly();
+      }
+    })
+    .withFailureHandler(() => {})
+    .getDeadMonthly(dateStr);
+}
+
+function renderDeadMonthly() {
+  const grid = document.getElementById('dead-monthly-grid');
+  const bar  = document.getElementById('dead-monthly-bar');
+  if (!grid) return;
+
+  grid.innerHTML = '';
+  let total = 0;
+
+  ROOMS.forEach(room => {
+    const val = deadMonthlyData[room] || 0;
+    total += val;
+    const sub = document.getElementById(`monthly-dead-${room}`);
+    if (sub) sub.textContent = val > 0 ? `30日累計 ${val}羽` : '';
+    const item = document.createElement('div');
+    item.className = 'dead-monthly-item';
+    item.innerHTML = `
+      <div class="dead-monthly-room">${room}</div>
+      <div class="dead-monthly-val${val === 0 ? ' zero' : ''}">${val}</div>
+    `;
+    grid.appendChild(item);
+  });
+
+  document.getElementById('dead-monthly-total-val').textContent = total;
+  if (bar) bar.style.display = 'block';
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+function showLoading(show) {
+  document.getElementById('loading').classList.toggle('show', show);
+}
+
+function updateLastFetchLabel() {
+  lastFetchTime = Date.now();
+  const el = document.getElementById('lastFetchLabel');
+  if (!el) return;
+  const now = new Date();
+  const m  = now.getMonth() + 1;
+  const d  = now.getDate();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  el.textContent = `最終取得: ${m}/${d} ${hh}:${mm}`;
+}
+
+function reloadCurrentData() {
+  if (!currentDate) return;
+  delete dataCache[currentDate];
+  delete deadMonthlyCache[currentDate];
+  resetAllData();
+  fetchAndLoadData(currentDate);
+  loadDeadMonthly(currentDate);
+}
+
+
+// iOS PWA 回転後にステータスバーが消えるバグの対策
+// black-translucent + viewport-fit=cover でオーバーレイ描画パスを使用
+// 念のため複数タイミングでスクロールリセットも実施
+(function() {
+  function fixStatusBar() {
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener('orientationchange', () => {
+    fixStatusBar();
+    setTimeout(fixStatusBar, 100);
+    setTimeout(fixStatusBar, 300);
+    setTimeout(fixStatusBar, 600);
+  });
+  if (screen.orientation) {
+    screen.orientation.addEventListener('change', () => {
+      fixStatusBar();
+      setTimeout(fixStatusBar, 100);
+      setTimeout(fixStatusBar, 300);
+    });
+  }
+})();
+
+// バックグラウンドから復帰時に5分以上経過していたら自動リロード
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  if (!currentDate || !lastFetchTime) return;
+  if (Date.now() - lastFetchTime > RELOAD_THRESHOLD) {
+    showToast('🔄 データを再読込しています...', 'info');
+    reloadCurrentData();
+  }
+});
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ── サマリー ──
+let summaryData = null;
+let historyData = null;
+let summaryPeriod = 7;
+let chartEggs = null;
+
+function switchTab(tab) {
+  currentTab = tab;
+  ['eggs','feed','dead','summary'].forEach(t => {
+    document.getElementById(`tab-${t}`)?.classList.toggle('active', t === tab);
+    document.getElementById(`panel-${t}`)?.classList.toggle('active', t === tab);
+  });
+  if (tab === 'summary' && !summaryData) loadSummary();
+  // 集計タブでは保存・クリアボタンを非表示
+  const bottomBar = document.querySelector('.bottom-bar');
+  if (bottomBar) bottomBar.style.display = tab === 'summary' ? 'none' : '';
+}
+
+function loadHistory() {
+  const btn = document.getElementById('historyLoadBtn');
+  const listEl = document.getElementById('historyList');
+  if (btn) { btn.disabled = true; btn.textContent = '読込中...'; }
+
+  google.script.run
+    .withSuccessHandler(res => {
+      if (btn) { btn.disabled = false; btn.textContent = '更新'; }
+      if (res.success) {
+        historyData = res.data;
+        renderHistory(historyData);
+        renderMemoHistory(res.memos);
+      } else {
+        if (listEl) listEl.innerHTML = '<div class="history-empty">読み込み失敗</div>';
+        const memoListEl = document.getElementById('memoHistoryList');
+        if (memoListEl) memoListEl.innerHTML = '<div class="history-empty">読み込み失敗</div>';
+      }
+    })
+    .withFailureHandler(() => {
+      if (btn) { btn.disabled = false; btn.textContent = '読み込む'; }
+      if (listEl) listEl.innerHTML = '<div class="history-empty">通信エラー</div>';
+      const memoListEl = document.getElementById('memoHistoryList');
+      if (memoListEl) memoListEl.innerHTML = '<div class="history-empty">通信エラー</div>';
+    })
+    .getHistory(30);
+}
+
+function renderHistory(groups) {
+  const listEl = document.getElementById('historyList');
+  if (!listEl) return;
+  if (!groups || groups.length === 0) {
+    listEl.innerHTML = '<div class="history-empty">履歴がありません</div>';
+    return;
+  }
+  // 直近3日分のみ表示
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 3);
+  const cutoffStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart(2,'0')}-${String(cutoff.getDate()).padStart(2,'0')}`;
+  groups = groups.filter(g => g.date >= cutoffStr);
+  if (groups.length === 0) {
+    listEl.innerHTML = '<div class="history-empty">直近3日の履歴がありません</div>';
+    return;
+  }
+  const typeLabel = { eggs: '🥚 採卵', feed: '🌾 餌', dead: '☠ 死鶏' };
+
+  listEl.innerHTML = groups.map(g => {
+    const subMap = {};
+    g.items.forEach(item => {
+      const key = item.period ? `${item.type}__${item.period}` : item.type;
+      if (!subMap[key]) subMap[key] = { type: item.type, period: item.period, rooms: 0, total: 0 };
+      subMap[key].rooms++;
+      subMap[key].total += Number(item.value) || 0;
+    });
+    const rows = Object.values(subMap).map(sg => {
+      const label = typeLabel[sg.type] + (sg.period ? ` ${sg.period}` : '');
+      const unit  = sg.type === 'feed' ? 'kg' : sg.type === 'dead' ? '羽' : '個';
+      const total = sg.type === 'feed'
+        ? `${Math.round(sg.total * 10) / 10}${unit}`
+        : `${sg.total}${unit}`;
+      return `<div class="history-row">
+        <span class="history-row-label">${label}</span>
+        <span class="history-row-rooms">${sg.rooms}鶏舎</span>
+        <span class="history-row-total">${total}</span>
+      </div>`;
+    }).join('');
+    return `<div class="history-item">
+      <div class="history-item-header">
+        <span class="history-item-time">${g.savedAt}</span>
+        <span class="history-item-worker">${g.worker}</span>
+      </div>
+      <div class="history-item-date">📅 ${g.date}</div>
+      <div class="history-rows">${rows}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderMemoHistory(memos) {
+  const listEl = document.getElementById('memoHistoryList');
+  if (!listEl) return;
+  const tabLabel = { eggs: '採卵', feed: '餌', dead: '死鶏' };
+  if (!memos || memos.length === 0) {
+    listEl.innerHTML = '<div class="history-empty">メモがありません</div>';
+    return;
+  }
+  listEl.innerHTML = memos.map(g =>
+    `<div class="history-item">
+      <div class="history-item-header">
+        <span class="history-item-time">${g.savedAt}</span>
+        <span class="history-item-worker">${g.worker}</span>
+      </div>
+      <div class="history-item-date">📅 ${g.date}</div>
+      <div class="history-memos" style="margin-top:4px;padding-top:0;border-top:none">
+        ${g.items.map(m =>
+          `<div class="history-memo-item">
+            <span class="history-memo-room">${m.room}（${tabLabel[m.tab] || m.tab}）</span>
+            <span class="history-memo-text">${m.value}</span>
+          </div>`
+        ).join('')}
+      </div>
+    </div>`
+  ).join('');
+}
+
+function loadSummary() {
+  document.getElementById('summary-loading').style.display = 'block';
+  document.getElementById('summary-body').style.display = 'none';
+  google.script.run
+    .withSuccessHandler(res => {
+      if (res.success) {
+        summaryData = res;
+        renderSummary(summaryPeriod);
+      } else {
+        document.getElementById('summary-loading').textContent = '読み込み失敗';
+      }
+    })
+    .withFailureHandler(() => {
+      document.getElementById('summary-loading').textContent = '通信エラー';
+    })
+    .getSummary(30);
+}
+
+function setSummaryPeriod(days) {
+  summaryPeriod = days;
+  document.getElementById('sp-7').classList.toggle('active', days === 7);
+  document.getElementById('sp-30').classList.toggle('active', days === 30);
+  if (summaryData) renderSummary(days);
+}
+
+function renderSummary(days) {
+  const eggsData = summaryData.eggs.slice(-days);
+
+  const labels = eggsData.map(d => {
+    const [,m,day] = d.date.split('-');
+    return `${parseInt(m)}/${parseInt(day)}`;
+  });
+
+  const eggTotals  = eggsData.map(d => d.total);
+  const hasEggs    = eggTotals.some(v => v > 0);
+  const activeDays = eggTotals.filter(v => v > 0).length;
+  const avgEggs    = hasEggs ? Math.round(eggTotals.filter(v=>v>0).reduce((a,b)=>a+b,0) / activeDays) : 0;
+  const sumEggs    = eggTotals.reduce((a,b)=>a+b,0);
+
+  document.getElementById('avg-eggs').textContent = hasEggs ? avgEggs.toLocaleString() : '－';
+  document.getElementById('sum-eggs').textContent = hasEggs ? sumEggs.toLocaleString() : '－';
+
+  drawChart('chart-eggs', labels, eggTotals, '#f5a623', '個', 'chart-eggs-label', avgEggs, hasEggs);
+
+  document.getElementById('summary-loading').style.display = 'none';
+  document.getElementById('summary-body').style.display = 'block';
+}
+
+function drawChart(canvasId, labels, values, color, unit, labelId, avg, hasData) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  if (chartEggs) { chartEggs.destroy(); chartEggs = null; }
+
+  const avgLine = hasData ? Array(labels.length).fill(Number(avg)) : [];
+
+  chartEggs = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          data: values,
+          backgroundColor: color + '99',
+          borderColor: color,
+          borderWidth: 1.5,
+          borderRadius: 3,
+        },
+        {
+          type: 'line',
+          data: avgLine,
+          borderColor: color,
+          borderWidth: 1.5,
+          borderDash: [4,3],
+          pointRadius: 0,
+          tension: 0,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 400 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.parsed.y.toLocaleString()} ${unit}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#8b90a8', font: { size: 9 }, maxRotation: 0 },
+          grid: { color: '#2e3349' }
+        },
+        y: {
+          ticks: { color: '#8b90a8', font: { size: 9 } },
+          grid: { color: '#2e3349' },
+          beginAtZero: true
+        }
+      }
+    }
+  });
+
+  if (labelId) {
+    const el = document.getElementById(labelId);
+    if (el) el.textContent = hasData ? `平均 ${avg.toLocaleString()} ${unit}` : '';
+  }
+}
+</script>
+</body>
+</html>

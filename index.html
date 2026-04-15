@@ -1483,6 +1483,11 @@ function updateYesterdayHints(type, dateStr) {
           if (am > 0) parts.push(`午前${am}個`);
           if (pm > 0) parts.push(`午後${pm}個`);
           text = `昨日 ${parts.join(' / ')}`;
+        } else if (type === 'feed') {
+          const parts = [];
+          if (am > 0) parts.push(`午前${am.toFixed(1)}kg`);
+          if (pm > 0) parts.push(`午後${pm.toFixed(1)}kg`);
+          text = `昨日 ${parts.join(' / ')}`;
         } else {
           const total = (am + pm).toFixed(1);
           text = `昨日 ${total}kg`;

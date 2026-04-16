@@ -21,10 +21,11 @@ const SHEETS = {
 // ===================================================
 // Webアプリのエントリーポイント
 // ===================================================
+function getAppVersion() {
+  return APP_VERSION;
+}
+
 function doGet(e) {
-  if (e.parameter.action === 'version') {
-    return ContentService.createTextOutput(APP_VERSION);
-  }
   return HtmlService.createHtmlOutputFromFile('index')
     .setTitle('養鶏管理')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)

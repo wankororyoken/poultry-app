@@ -745,7 +745,7 @@
   </div>
 
   <button class="setup-btn" onclick="startApp()">入力開始 →</button>
-  <div class="app-version">ver 46</div>
+  <div class="app-version"><span class="ver-label">-</span></div>
 </div>
 
 <!-- MAIN APP -->
@@ -917,7 +917,7 @@
       <div class="app-version" id="settings-saved-msg"></div>
     </div>
 
-    <div class="app-version">ver 46</div>
+    <div class="app-version"><span class="ver-label">-</span></div>
   </div><!-- /content -->
 
   <!-- BOTTOM BAR -->
@@ -1039,29 +1039,9 @@ function updatePendingBadge() {
   if (countEl) countEl.textContent = n;
 }
 
-// ── バージョンチェック（iOSキャッシュ対策）──
 const LOCAL_VERSION_KEY = 'app_version';
 
-function checkVersion() {
-  try {
-    google.script.run
-      .withSuccessHandler(latest => {
-        if (!latest) return;
-        const cached = localStorage.getItem(LOCAL_VERSION_KEY);
-        if (latest !== cached) {
-          localStorage.setItem(LOCAL_VERSION_KEY, latest);
-          window.location.reload();
-        }
-      })
-      .withFailureHandler(() => {})
-      .getAppVersion();
-  } catch (e) {
-    console.log('version check skipped:', e);
-  }
-}
-
 window.onload = function() {
-  checkVersion();
   const today = new Date();
   const y = today.getFullYear();
   const m = String(today.getMonth()+1).padStart(2,'0');
@@ -1099,6 +1079,7 @@ window.onload = function() {
   buildDeadGrid();
   buildSettingsGrid();
   loadSettingsData();
+  loadAppVersion();
 };
 
 function buildGrid(containerId, type, unit, decimal = false) {
@@ -2468,6 +2449,24 @@ function drawChart(canvasId, labels, values, color, unit, labelId, avg, hasData)
     const el = document.getElementById(labelId);
     if (el) el.textContent = hasData ? `平均 ${avg.toLocaleString()} ${unit}` : '';
   }
+}
+
+// ── アプリバージョン表示 ──
+function loadAppVersion() {
+  const cached = localStorage.getItem(LOCAL_VERSION_KEY);
+  if (cached) updateVerLabels(cached);
+  google.script.run
+    .withSuccessHandler(v => {
+      if (!v) return;
+      localStorage.setItem(LOCAL_VERSION_KEY, v);
+      updateVerLabels(v);
+    })
+    .withFailureHandler(() => {})
+    .getAppVersion();
+}
+
+function updateVerLabels(v) {
+  document.querySelectorAll('.ver-label').forEach(el => el.textContent = v);
 }
 
 // ── 設定（餌の規定量）──

@@ -1039,6 +1039,25 @@ function updatePendingBadge() {
   if (countEl) countEl.textContent = n;
 }
 
+// ── バージョンチェック（iOSキャッシュ対策）──
+const LOCAL_VERSION_KEY = 'app_version';
+
+async function checkVersion() {
+  try {
+    const res = await fetch('?action=version');
+    const latest = (await res.text()).trim();
+    const cached = localStorage.getItem(LOCAL_VERSION_KEY);
+    if (latest !== cached) {
+      localStorage.setItem(LOCAL_VERSION_KEY, latest);
+      window.location.reload(true);
+    }
+  } catch (e) {
+    console.log('version check skipped:', e);
+  }
+}
+
+window.addEventListener('load', checkVersion);
+
 window.onload = function() {
   const today = new Date();
   const y = today.getFullYear();

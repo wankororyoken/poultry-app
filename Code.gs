@@ -5,6 +5,9 @@
 // ★ スプレッドシートのIDを設定してください
 const SPREADSHEET_ID = '1C5Aa1dZ15utX3jUEZQn17ljTBzlddjUCUmGypfaPf-s';
 
+// ★ デプロイ時にバージョンを更新してください（例: 'v2', 'v3-fix'）
+const APP_VERSION = 'v1';
+
 // シート名
 const SHEETS = {
   採卵: '採卵記録',
@@ -19,6 +22,9 @@ const SHEETS = {
 // Webアプリのエントリーポイント
 // ===================================================
 function doGet(e) {
+  if (e.parameter.action === 'version') {
+    return ContentService.createTextOutput(APP_VERSION);
+  }
   return HtmlService.createHtmlOutputFromFile('index')
     .setTitle('養鶏管理')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)

@@ -466,6 +466,74 @@
   }
   .copy-prev-btn:active { opacity: .7; }
 
+  /* ── 特記タブ ── */
+  .special-panel { padding-bottom: 8px; }
+  .special-section { margin-bottom: 20px; }
+  .special-section-title {
+    font-size: 13px; font-weight: 900; color: var(--text);
+    margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+  }
+  .broken-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;
+  }
+  .broken-card {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 10px 12px;
+    transition: border-color .2s;
+  }
+  .broken-card:focus-within { border-color: var(--accent); background: var(--surface2); }
+  .broken-card.has-value { border-color: rgba(245,166,35,.5); }
+  .broken-label { font-size: 10px; font-weight: 700; color: var(--text2); letter-spacing: 0.8px; margin-bottom: 4px; }
+  .broken-input {
+    width: 100%; background: transparent; border: none; outline: none;
+    color: var(--accent); font-size: 28px; font-weight: 900;
+    font-family: 'Noto Sans JP', sans-serif; caret-color: var(--accent);
+    -webkit-appearance: none;
+  }
+  .broken-input::placeholder { color: var(--border); font-size: 22px; }
+  .unknown-entry {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 12px; margin-bottom: 8px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .unknown-entry-row { display: flex; gap: 8px; align-items: center; }
+  .unknown-select {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 10px;
+    color: var(--text); font-size: 13px; font-weight: 700;
+    font-family: 'Noto Sans JP', sans-serif;
+    -webkit-appearance: none; outline: none;
+  }
+  .unknown-detail-input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 10px;
+    color: var(--text); font-size: 13px; font-weight: 700;
+    font-family: 'Noto Sans JP', sans-serif; outline: none;
+  }
+  .unknown-detail-input::placeholder { color: var(--text2); font-weight: 400; }
+  .unknown-del-btn {
+    background: none; border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 10px;
+    color: var(--red); font-size: 14px; cursor: pointer; flex-shrink: 0;
+  }
+  .unknown-add-btn {
+    width: 100%; padding: 11px 0;
+    background: rgba(91,141,238,.12); border: 1.5px solid rgba(91,141,238,.35);
+    border-radius: 10px; color: var(--blue);
+    font-size: 13px; font-weight: 700; font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer; transition: all .15s;
+  }
+  .unknown-add-btn:active { opacity: .7; }
+  .special-save-btn {
+    width: 100%; height: 48px; margin-top: 16px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; border-radius: var(--radius); color: #000;
+    font-size: 15px; font-weight: 900; font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer; box-shadow: 0 4px 16px rgba(245,166,35,.4);
+  }
+  .special-save-btn:active { opacity: .9; transform: scale(0.98); }
+  .special-save-btn:disabled { opacity: .4; }
+
   /* ── 設定タブ ── */
   .settings-panel { padding-bottom: 8px; }
   .settings-save-btn {
@@ -792,6 +860,10 @@
     <div class="tab" onclick="switchTab('summary')" id="tab-summary">
       <span class="tab-icon">📊</span>集計
     </div>
+    <div class="tab" onclick="switchTab('special')" id="tab-special">
+      <span class="tab-icon">📋</span>特記
+      <div class="has-badge" id="badge-special"></div>
+    </div>
     <div class="tab" onclick="switchTab('settings')" id="tab-settings">
       <span class="tab-icon">⚙️</span>設定
     </div>
@@ -907,6 +979,40 @@
           <div class="history-empty">「読み込む」を押してください</div>
         </div>
       </div>
+    </div>
+
+    <!-- 特記タブ -->
+    <div class="tab-panel special-panel" id="panel-special">
+
+      <!-- 破卵 -->
+      <div class="special-section">
+        <div class="special-section-title">💔 破卵（総数）</div>
+        <div class="broken-grid">
+          <div class="broken-card" id="card-broken-am">
+            <div class="broken-label">☀️ 午前</div>
+            <input class="broken-input" type="number" inputmode="numeric" pattern="[0-9]*"
+              placeholder="0" id="input-broken-am"
+              oninput="onBrokenInput('午前',this.value)" onfocus="this.select()">
+            <div class="room-unit">個</div>
+          </div>
+          <div class="broken-card" id="card-broken-pm">
+            <div class="broken-label">🌙 午後</div>
+            <input class="broken-input" type="number" inputmode="numeric" pattern="[0-9]*"
+              placeholder="0" id="input-broken-pm"
+              oninput="onBrokenInput('午後',this.value)" onfocus="this.select()">
+            <div class="room-unit">個</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 不明卵 -->
+      <div class="special-section">
+        <div class="special-section-title">🔍 不明卵</div>
+        <div id="unknown-list"></div>
+        <button class="unknown-add-btn" onclick="addUnknownEntry()">＋ 不明卵を追加</button>
+      </div>
+
+      <button class="special-save-btn" id="specialSaveBtn" onclick="saveSpecialData()">💾 保存する</button>
     </div>
 
     <!-- 設定タブ -->
@@ -1226,6 +1332,7 @@ function startApp() {
     .loadDataRange(dates);
 
   loadDeadMonthly(d);
+  loadSpecialEggsData(d);
   // 今日なので「次へ」は無効
   const nextBtn = document.getElementById('nextDayBtn');
   if (nextBtn) nextBtn.disabled = true;
@@ -1271,6 +1378,7 @@ function onDateChange(newDate) {
   } else {
     loadDeadMonthly(newDate);
   }
+  loadSpecialEggsData(newDate);
 
   prefetchAround(newDate);
 }
@@ -1708,6 +1816,7 @@ function resetAllData() {
   if (etv) etv.textContent = '－';
   const ftv = document.getElementById('feed-total-val');
   if (ftv) ftv.textContent = '－';
+  resetSpecialData();
 }
 
 function clearCurrent() {
@@ -2230,14 +2339,14 @@ let chartEggs = null;
 
 function switchTab(tab) {
   currentTab = tab;
-  ['eggs','feed','dead','summary','settings'].forEach(t => {
+  ['eggs','feed','dead','summary','special','settings'].forEach(t => {
     document.getElementById(`tab-${t}`)?.classList.toggle('active', t === tab);
     document.getElementById(`panel-${t}`)?.classList.toggle('active', t === tab);
   });
   if (tab === 'summary' && !summaryData) loadSummary();
-  // 集計・設定タブでは保存・クリアボタンを非表示
+  // 集計・特記・設定タブでは通常の保存・クリアボタンを非表示
   const bottomBar = document.querySelector('.bottom-bar');
-  if (bottomBar) bottomBar.style.display = (tab === 'summary' || tab === 'settings') ? 'none' : '';
+  if (bottomBar) bottomBar.style.display = (tab === 'summary' || tab === 'settings' || tab === 'special') ? 'none' : '';
 }
 
 function loadHistory() {
@@ -2449,6 +2558,134 @@ function drawChart(canvasId, labels, values, color, unit, labelId, avg, hasData)
     const el = document.getElementById(labelId);
     if (el) el.textContent = hasData ? `平均 ${avg.toLocaleString()} ${unit}` : '';
   }
+}
+
+// ── 特記（破卵・不明卵）──
+const LOCATIONS = ['餌箱の下', '巣箱の下', '角', 'その他'];
+const specialData = { broken: { '午前': '', '午後': '' }, unknown: [] };
+let unknownEntryId = 0;
+
+function onBrokenInput(period, val) {
+  specialData.broken[period] = val;
+  const card = document.getElementById(`card-broken-${period === '午前' ? 'am' : 'pm'}`);
+  card?.classList.toggle('has-value', val !== '');
+  updateSpecialBadge();
+}
+
+function updateSpecialBadge() {
+  const has = specialData.broken['午前'] !== '' || specialData.broken['午後'] !== '' || specialData.unknown.length > 0;
+  document.getElementById('badge-special')?.classList.toggle('show', has);
+}
+
+function addUnknownEntry(entry) {
+  const id = ++unknownEntryId;
+  const room = entry?.room || ROOMS[0];
+  const loc  = entry?.location || LOCATIONS[0];
+  const det  = entry?.locationDetail || '';
+
+  const div = document.createElement('div');
+  div.className = 'unknown-entry';
+  div.id = `unknown-entry-${id}`;
+  div.innerHTML = `
+    <div class="unknown-entry-row">
+      <select class="unknown-select" id="unknown-room-${id}" onchange="updateUnknownEntry(${id})">
+        ${ROOMS.map(r => `<option value="${r}" ${r === room ? 'selected' : ''}>${r}</option>`).join('')}
+      </select>
+      <select class="unknown-select" id="unknown-loc-${id}" onchange="updateUnknownEntry(${id});toggleUnknownDetail(${id})">
+        ${LOCATIONS.map(l => `<option value="${l}" ${l === loc ? 'selected' : ''}>${l}</option>`).join('')}
+      </select>
+      <button class="unknown-del-btn" onclick="removeUnknownEntry(${id})">✕</button>
+    </div>
+    <input class="unknown-detail-input" id="unknown-det-${id}" placeholder="場所を入力"
+      value="${det}" oninput="updateUnknownEntry(${id})"
+      style="display:${loc === 'その他' ? 'block' : 'none'}">
+  `;
+  document.getElementById('unknown-list').appendChild(div);
+
+  specialData.unknown.push({ id, room, location: loc, locationDetail: det });
+  updateSpecialBadge();
+}
+
+function toggleUnknownDetail(id) {
+  const loc = document.getElementById(`unknown-loc-${id}`)?.value;
+  const det = document.getElementById(`unknown-det-${id}`);
+  if (det) det.style.display = loc === 'その他' ? 'block' : 'none';
+}
+
+function updateUnknownEntry(id) {
+  const idx = specialData.unknown.findIndex(e => e.id === id);
+  if (idx < 0) return;
+  specialData.unknown[idx].room           = document.getElementById(`unknown-room-${id}`)?.value || '';
+  specialData.unknown[idx].location       = document.getElementById(`unknown-loc-${id}`)?.value || '';
+  specialData.unknown[idx].locationDetail = document.getElementById(`unknown-det-${id}`)?.value || '';
+}
+
+function removeUnknownEntry(id) {
+  const el = document.getElementById(`unknown-entry-${id}`);
+  if (el) el.remove();
+  specialData.unknown = specialData.unknown.filter(e => e.id !== id);
+  updateSpecialBadge();
+}
+
+function loadSpecialEggsData(dateStr) {
+  google.script.run
+    .withSuccessHandler(res => {
+      if (!res.success) return;
+      // 破卵
+      specialData.broken = { '午前': '', '午後': '' };
+      ['午前','午後'].forEach(p => {
+        const v = res.broken[p];
+        if (v !== '' && v !== undefined && v !== null) {
+          specialData.broken[p] = String(v);
+          const key = p === '午前' ? 'am' : 'pm';
+          const el = document.getElementById(`input-broken-${key}`);
+          if (el) el.value = String(v);
+          document.getElementById(`card-broken-${key}`)?.classList.add('has-value');
+        }
+      });
+      // 不明卵
+      document.getElementById('unknown-list').innerHTML = '';
+      specialData.unknown = [];
+      (res.unknown || []).forEach(e => addUnknownEntry(e));
+      updateSpecialBadge();
+    })
+    .withFailureHandler(() => {})
+    .loadSpecialEggs(dateStr);
+}
+
+function resetSpecialData() {
+  specialData.broken = { '午前': '', '午後': '' };
+  specialData.unknown = [];
+  ['am','pm'].forEach(k => {
+    const el = document.getElementById(`input-broken-${k}`);
+    if (el) el.value = '';
+    document.getElementById(`card-broken-${k}`)?.classList.remove('has-value');
+  });
+  document.getElementById('unknown-list').innerHTML = '';
+  updateSpecialBadge();
+}
+
+function saveSpecialData() {
+  if (!currentDate || !currentWorker) { showToast('入力者と日付を確認してください', 'error'); return; }
+  const btn = document.getElementById('specialSaveBtn');
+  btn.disabled = true;
+  showLoading(true);
+  const broken = [];
+  ['午前','午後'].forEach(p => {
+    if (specialData.broken[p] !== '') broken.push({ period: p, value: specialData.broken[p] });
+  });
+  const unknown = specialData.unknown.map(e => ({
+    room: e.room, location: e.location, locationDetail: e.locationDetail
+  }));
+  const payload = { date: currentDate, worker: currentWorker, broken, unknown };
+  google.script.run
+    .withSuccessHandler(res => {
+      showLoading(false); btn.disabled = false;
+      if (res.success) showToast('✅ 保存しました！', 'success');
+      else showToast('❌ 保存失敗: ' + res.message, 'error');
+    })
+    .withFailureHandler(() => { showLoading(false); btn.disabled = false; showToast('❌ 保存失敗', 'error'); })
+    .saveSpecialEggs(payload);
 }
 
 // ── アプリバージョン表示 ──

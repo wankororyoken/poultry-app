@@ -15,7 +15,9 @@ const SHEETS = {
   死鶏: '死鶏記録',
   入力者: '入力者',
   メモ: 'メモ記録',
-  設定: '設定'
+  設定: '設定',
+  破卵: '破卵記録',
+  不明卵: '不明卵記録'
 };
 
 // ===================================================
@@ -75,6 +77,18 @@ function initSheets() {
     sheet.getRange(1, 1, 1, 2).setFontWeight('bold').setBackground('#f3f3f3');
   }
 
+  sheet = getOrCreateSheet(ss, SHEETS.破卵);
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['日付', '時間帯', '数', '入力者', '入力日時']);
+    sheet.getRange(1, 1, 1, 5).setFontWeight('bold').setBackground('#f3f3f3');
+  }
+
+  sheet = getOrCreateSheet(ss, SHEETS.不明卵);
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['日付', '鶏舎', '場所', '場所詳細', '入力者', '入力日時']);
+    sheet.getRange(1, 1, 1, 6).setFontWeight('bold').setBackground('#f3f3f3');
+  }
+
   return '初期化完了';
 }
 
@@ -82,6 +96,77 @@ function getOrCreateSheet(ss, name) {
   let sheet = ss.getSheetByName(name);
   if (!sheet) sheet = ss.insertSheet(name);
   return sheet;
+}
+
+// ===================================================
+// 破卵・不明卵 取得・保存
+// ===================================================
+function loadSpecialEggs(dateStr) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const normTarget = normDate(dateStr);
+
+    // 破卵
+    const broken = { '午前': '', '午後': '' };
+    const brokenSheet = ss.getSheetByName(SHEETS.破卵);
+    if (brokenSheet && brokenSheet.getLastRow() > 1) {
+      brokenSheet.getDataRange().getValues().slice(1).forEach(row => {
+        if (normDate(row[0]) === normTarget && broken[row[1]] !== undefined) {
+          broken[row[1]] = row[2];
+        }
+      });
+    }
+
+    // 不明卵
+    const unknown = [];
+    const unknownSheet = ss.getSheetByName(SHEETS.不明卵);
+    if (unknownSheet && unknownSheet.getLastRow() > 1) {
+      unknownSheet.getDataRange().getValues().slice(1).forEach(row => {
+        if (normDate(row[0]) === normTarget) {
+          unknown.push({ room: String(row[1]), location: String(row[2]), locationDetail: String(row[3]) });
+        }
+      });
+    }
+
+    return { success: true, broken, unknown };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function saveSpecialEggs(payload) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const now = new Date();
+    const nowStr = Utilities.formatDate(now, 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss');
+    const dateStr = payload.date;
+    const normTarget = normDate(dateStr);
+
+    // 破卵：同日データを上書き
+    if (payload.broken && payload.broken.length > 0) {
+      const sheet = ss.getSheetByName(SHEETS.破卵);
+      const periods = new Set(payload.broken.map(r => r.period));
+      deleteMatchingRows(sheet, row => normDate(row[0]) === normTarget && periods.has(row[1]));
+      payload.broken.forEach(row => {
+        if (row.value !== '' && row.value !== null) {
+          sheet.appendRow([dateStr, row.period, Number(row.value), payload.worker, nowStr]);
+        }
+      });
+    }
+
+    // 不明卵：同日データをすべて上書き
+    const unknownSheet = ss.getSheetByName(SHEETS.不明卵);
+    deleteMatchingRows(unknownSheet, row => normDate(row[0]) === normTarget);
+    if (payload.unknown && payload.unknown.length > 0) {
+      payload.unknown.forEach(row => {
+        unknownSheet.appendRow([dateStr, row.room, row.location, row.locationDetail || '', payload.worker, nowStr]);
+      });
+    }
+
+    return { success: true, message: '保存しました' };
+  } catch (e) {
+    return { success: false, message: 'エラー: ' + e.toString() };
+  }
 }
 
 // ===================================================

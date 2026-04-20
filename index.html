@@ -1852,7 +1852,7 @@ function clearCurrent() {
 }
 
 function saveData() {
-  const missing = checkMissing(currentTab);
+  const missing = checkMissing();
   if (missing.hasMissing) {
     showCheckModal(missing);
     return;
@@ -1860,55 +1860,66 @@ function saveData() {
   doSave();
 }
 
-function collectPayload(tab) {
+function collectPayload() {
   const eggs = [], feed = [], dead = [];
-  if (tab === 'eggs') {
+  // 採卵 - 両期間まとめて収集
+  ['午前', '午後'].forEach(period => {
     ROOMS.forEach(room => {
-      const ev = data.eggs[eggsPeriod][room];
-      if (ev !== undefined && ev !== '') eggs.push({period: eggsPeriod, room, value: ev});
+      const ev = data.eggs[period]?.[room];
+      if (ev !== undefined && ev !== '') eggs.push({period, room, value: ev});
     });
-  }
-  if (tab === 'feed') {
-    // 現在表示中の期間のみ保存（修正の有無にかかわらず）
+  });
+  // 餌 - 両期間まとめて収集
+  ['午前', '午後'].forEach(period => {
     ROOMS.forEach(room => {
-      const fv = data.feed[feedPeriod][room];
-      if (fv !== undefined && fv !== '') feed.push({period: feedPeriod, room, value: fv});
+      const fv = data.feed[period]?.[room];
+      if (fv !== undefined && fv !== '') feed.push({period, room, value: fv});
     });
-  }
-  if (tab === 'dead') {
-    ROOMS.forEach(room => {
-      const dv = data.dead[room];
-      if (dv !== undefined && dv !== '') dead.push({room, value: dv});
-    });
-  }
-  const memos = [];
+  });
+  // 死鶏
   ROOMS.forEach(room => {
-    const v = data.memo[tab]?.[room];
-    if (v && v !== '') memos.push({ tab, room, text: v });
+    const dv = data.dead[room];
+    if (dv !== undefined && dv !== '') dead.push({room, value: dv});
+  });
+  // メモ - 全タブ
+  const memos = [];
+  ['eggs', 'feed', 'dead'].forEach(tab => {
+    ROOMS.forEach(room => {
+      const v = data.memo[tab]?.[room];
+      if (v && v !== '') memos.push({ tab, room, text: v });
+    });
   });
   return { eggs, feed, dead, memos };
 }
 
-function checkMissing(tab) {
+function checkMissing() {
   const missing = { hasMissing: false, eggs: [], feed: [] };
-  if (tab === 'eggs') {
-    ROOMS.forEach(room => {
-      const v = data.eggs[eggsPeriod][room];
-      if (v === undefined || v === '') {
-        missing.eggs.push(`${room} ${eggsPeriod}`);
-        missing.hasMissing = true;
-      }
-    });
-  }
-  if (tab === 'feed') {
-    ROOMS.forEach(room => {
-      const v = data.feed[feedPeriod][room];
-      if (v === undefined || v === '') {
-        missing.feed.push(`${room} ${feedPeriod}`);
-        missing.hasMissing = true;
-      }
-    });
-  }
+  // 採卵：いずれかの部屋に入力がある期間のみチェック
+  ['午前', '午後'].forEach(period => {
+    const hasAny = ROOMS.some(r => data.eggs[period]?.[r] !== undefined && data.eggs[period]?.[r] !== '');
+    if (hasAny) {
+      ROOMS.forEach(room => {
+        const v = data.eggs[period]?.[room];
+        if (v === undefined || v === '') {
+          missing.eggs.push(`${room} ${period}`);
+          missing.hasMissing = true;
+        }
+      });
+    }
+  });
+  // 餌：いずれかの部屋に入力がある期間のみチェック
+  ['午前', '午後'].forEach(period => {
+    const hasAny = ROOMS.some(r => data.feed[period]?.[r] !== undefined && data.feed[period]?.[r] !== '');
+    if (hasAny) {
+      ROOMS.forEach(room => {
+        const v = data.feed[period]?.[room];
+        if (v === undefined || v === '') {
+          missing.feed.push(`${room} ${period}`);
+          missing.hasMissing = true;
+        }
+      });
+    }
+  });
   // dead タブは 0 でも有効なので入力漏れチェックなし
   return missing;
 }
@@ -1946,7 +1957,7 @@ function doSave() {
   btn.disabled = true;
   showLoading(true);
 
-  const { eggs, feed, dead, memos } = collectPayload(currentTab);
+  const { eggs, feed, dead, memos } = collectPayload();
 
   if (eggs.length === 0 && feed.length === 0 && dead.length === 0) {
     showLoading(false);
@@ -1991,20 +2002,22 @@ function doSave() {
         delete deadMonthlyCache[currentDate];
         historyData = null; // 保存後は履歴を再取得させる
         loadDeadMonthly(currentDate);
-        // 保存したタブのカードのloaded-valueを解除
-        ROOMS.forEach(room => {
-          document.getElementById(`card-${currentTab}-${room}`)?.classList.remove('loaded-value');
+        // 全タブのカードのloaded-valueを解除
+        ['eggs', 'feed', 'dead'].forEach(tab => {
+          ROOMS.forEach(room => {
+            document.getElementById(`card-${tab}-${room}`)?.classList.remove('loaded-value');
+          });
         });
-        if (currentTab === 'feed') {
-          // 保存した期間のみ feedYesterdaySet から除去
-          ROOMS.forEach(room => feedYesterdaySet.delete(`${feedPeriod}_${room}`));
-          window._feedSource = 'today';
-          updateFeedStatusBadges();
-          feedSavedPeriods.add(feedPeriod);
-          updateCopyFeedBtn();
-          const feedLabelEl = document.getElementById('loaded-feed');
-          if (feedLabelEl) feedLabelEl.textContent = '読込済';
-        }
+        // 餌の両期間のfeedYesterdaySetを解除
+        ['午前', '午後'].forEach(period => {
+          ROOMS.forEach(room => feedYesterdaySet.delete(`${period}_${room}`));
+          feedSavedPeriods.add(period);
+        });
+        window._feedSource = 'today';
+        updateFeedStatusBadges();
+        updateCopyFeedBtn();
+        const feedLabelEl = document.getElementById('loaded-feed');
+        if (feedLabelEl) feedLabelEl.textContent = '読込済';
       } else {
         savePending(payload);
         showToast('📶 保存失敗 – 端末に保存しました', 'info');

@@ -17,7 +17,9 @@ const SHEETS = {
   メモ: 'メモ記録',
   設定: '設定',
   破卵: '破卵記録',
-  不明卵: '不明卵記録'
+  不明卵: '不明卵記録',
+  お知らせ: 'お知らせ',
+  羽数: '羽数設定'
 };
 
 // ===================================================
@@ -87,6 +89,18 @@ function initSheets() {
   if (sheet.getLastRow() === 0) {
     sheet.appendRow(['日付', '鶏舎', '場所', '場所詳細', '入力者', '入力日時']);
     sheet.getRange(1, 1, 1, 6).setFontWeight('bold').setBackground('#f3f3f3');
+  }
+
+  sheet = getOrCreateSheet(ss, SHEETS.お知らせ);
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['日時', '投稿者', '本文', '有効']);
+    sheet.getRange(1, 1, 1, 4).setFontWeight('bold').setBackground('#f3f3f3');
+  }
+
+  sheet = getOrCreateSheet(ss, SHEETS.羽数);
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['鶏舎', '入雛日', '初期羽数']);
+    sheet.getRange(1, 1, 1, 3).setFontWeight('bold').setBackground('#f3f3f3');
   }
 
   return '初期化完了';
@@ -628,6 +642,180 @@ function getHistory(days) {
 
     return { success: true, data: dataGroups, memos: memoGroups };
   } catch(e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+// ===================================================
+// お知らせ 取得・保存・削除
+// ===================================================
+function getAnnouncements() {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(SHEETS.お知らせ);
+    if (!sheet || sheet.getLastRow() <= 1) return { success: true, announcements: [] };
+    const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 4).getValues();
+    const announcements = [];
+    rows.forEach((row, idx) => {
+      if (row[3] == 1) {
+        const d = row[0] instanceof Date
+          ? Utilities.formatDate(row[0], 'Asia/Tokyo', 'M/d HH:mm')
+          : String(row[0]).substring(0, 16).replace('/', '/');
+        announcements.push({ id: idx + 2, date: d, worker: String(row[1]), text: String(row[2]) });
+      }
+    });
+    announcements.reverse();
+    return { success: true, announcements };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function saveAnnouncement(payload) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = getOrCreateSheet(ss, SHEETS.お知らせ);
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(['日時', '投稿者', '本文', '有効']);
+    }
+    const nowStr = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss');
+    sheet.appendRow([nowStr, payload.worker, payload.text, 1]);
+    return { success: true };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function deleteAnnouncement(rowNum) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(SHEETS.お知らせ);
+    if (!sheet || rowNum < 2) return { success: false };
+    sheet.getRange(rowNum, 4).setValue(0);
+    return { success: true };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+// ===================================================
+// 羽数設定 取得・保存
+// ===================================================
+function getFlockSettings() {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(SHEETS.羽数);
+    if (!sheet || sheet.getLastRow() <= 1) return { success: true, rooms: [] };
+    const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 3).getValues();
+    const rooms = rows
+      .map(row => ({
+        room: String(row[0]),
+        startDate: row[1] instanceof Date
+          ? Utilities.formatDate(row[1], 'Asia/Tokyo', 'yyyy-MM-dd')
+          : String(row[1]).replace(/\//g, '-').trim(),
+        initialCount: Number(row[2]) || 0
+      }))
+      .filter(r => r.room);
+    return { success: true, rooms };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function saveFlockSettings(payload) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = getOrCreateSheet(ss, SHEETS.羽数);
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(['鶏舎', '入雛日', '初期羽数']);
+    }
+    if (sheet.getLastRow() > 1) {
+      sheet.getRange(2, 1, sheet.getLastRow() - 1, 3).clearContent();
+    }
+    payload.rooms.forEach(item => {
+      if (item.room && item.startDate && item.initialCount) {
+        sheet.appendRow([item.room, item.startDate, Number(item.initialCount)]);
+      }
+    });
+    return { success: true };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+// ===================================================
+// ダッシュボードデータ取得
+// 戻り値: { todayEggs, todayFeed, currentFlock, announcements }
+// ===================================================
+function getDashboardData(dateStr) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const normTarget = normDate(dateStr);
+
+    // 今日の採卵（部屋ごと合計）
+    const todayEggs = {};
+    const eggSheet = ss.getSheetByName(SHEETS.採卵);
+    if (eggSheet && eggSheet.getLastRow() > 1) {
+      eggSheet.getDataRange().getValues().slice(1).forEach(row => {
+        if (normDate(row[0]) === normTarget) {
+          todayEggs[String(row[2])] = (todayEggs[String(row[2])] || 0) + (Number(row[3]) || 0);
+        }
+      });
+    }
+
+    // 今日の餌（部屋ごと合計）
+    const todayFeed = {};
+    const feedSheet = ss.getSheetByName(SHEETS.餌);
+    if (feedSheet && feedSheet.getLastRow() > 1) {
+      feedSheet.getDataRange().getValues().slice(1).forEach(row => {
+        if (normDate(row[0]) === normTarget) {
+          const v = (todayFeed[String(row[2])] || 0) + (Number(row[3]) || 0);
+          todayFeed[String(row[2])] = Math.round(v * 10) / 10;
+        }
+      });
+    }
+
+    // 現在羽数（初期羽数 - 入雛日以降の累計死鶏数）
+    const currentFlock = {};
+    const flockSheet = ss.getSheetByName(SHEETS.羽数);
+    if (flockSheet && flockSheet.getLastRow() > 1) {
+      const flockRows = flockSheet.getRange(2, 1, flockSheet.getLastRow() - 1, 3).getValues();
+      const deadSheet = ss.getSheetByName(SHEETS.死鶏);
+      const deadRows = (deadSheet && deadSheet.getLastRow() > 1)
+        ? deadSheet.getDataRange().getValues().slice(1) : [];
+      flockRows.forEach(row => {
+        const room = String(row[0]);
+        const startDate = normDate(row[1]);
+        const initialCount = Number(row[2]) || 0;
+        if (!room || !startDate) return;
+        let deadCount = 0;
+        deadRows.forEach(drow => {
+          const d = normDate(drow[0]);
+          if (String(drow[1]) === room && d >= startDate && d <= normTarget) {
+            deadCount += Number(drow[2]) || 0;
+          }
+        });
+        currentFlock[room] = { current: initialCount - deadCount, initial: initialCount, startDate };
+      });
+    }
+
+    // お知らせ（有効なもの・新着順）
+    const announcements = [];
+    const annoSheet = ss.getSheetByName(SHEETS.お知らせ);
+    if (annoSheet && annoSheet.getLastRow() > 1) {
+      annoSheet.getRange(2, 1, annoSheet.getLastRow() - 1, 4).getValues().forEach((row, idx) => {
+        if (row[3] == 1) {
+          const d = row[0] instanceof Date
+            ? Utilities.formatDate(row[0], 'Asia/Tokyo', 'M/d HH:mm')
+            : String(row[0]).substring(0, 16);
+          announcements.push({ id: idx + 2, date: d, worker: String(row[1]), text: String(row[2]) });
+        }
+      });
+      announcements.reverse();
+    }
+
+    return { success: true, todayEggs, todayFeed, currentFlock, announcements };
+  } catch (e) {
     return { success: false, message: e.toString() };
   }
 }

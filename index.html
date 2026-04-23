@@ -546,6 +546,97 @@
   .settings-save-btn:active { opacity: .9; transform: scale(0.98); }
   .settings-save-btn:disabled { opacity: .4; }
 
+  /* ── ホームタブ ── */
+  .home-section {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px; margin-bottom: 14px;
+  }
+  .home-section-title {
+    font-size: 12px; font-weight: 800; color: var(--text2);
+    letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 12px;
+  }
+  .home-empty { font-size: 13px; color: var(--text2); text-align: center; padding: 8px 0; }
+  .announce-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; margin-bottom: 8px;
+  }
+  .announce-card:last-child { margin-bottom: 0; }
+  .announce-card-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;
+  }
+  .announce-card-meta { font-size: 11px; color: var(--text2); }
+  .announce-card-text { font-size: 14px; font-weight: 500; line-height: 1.5; white-space: pre-wrap; }
+  .dashboard-table { width: 100%; border-collapse: collapse; }
+  .dashboard-table th {
+    font-size: 11px; font-weight: 700; color: var(--text2);
+    padding: 5px 4px; text-align: center; border-bottom: 1px solid var(--border);
+  }
+  .dashboard-table th:first-child { text-align: left; }
+  .dashboard-table td {
+    font-size: 13px; font-weight: 600; padding: 9px 4px;
+    text-align: center; border-bottom: 1px solid var(--border);
+  }
+  .dashboard-table tr:last-child td { border-bottom: none; }
+  .dashboard-table td:first-child { text-align: left; font-size: 12px; font-weight: 700; color: var(--text2); }
+  .dash-eggs { color: var(--accent); }
+  .dash-feed { color: var(--green); }
+  .dash-flock { color: var(--blue); }
+  .dash-none { color: var(--border); font-size: 11px; }
+  .home-refresh-btn {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text2); font-size: 12px; font-weight: 700;
+    padding: 4px 10px; cursor: pointer; float: right; margin-top: -2px;
+  }
+  /* ── 羽数管理（設定タブ）── */
+  .flock-section-title {
+    font-size: 12px; font-weight: 800; color: var(--text2);
+    letter-spacing: 0.8px; text-transform: uppercase; margin: 20px 0 10px;
+  }
+  .flock-row {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px; margin-bottom: 10px;
+  }
+  .flock-row-label { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .flock-row-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .flock-input-group { display: flex; flex-direction: column; gap: 4px; }
+  .flock-input-sublabel { font-size: 11px; color: var(--text2); font-weight: 600; }
+  .flock-input {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-size: 13px; padding: 7px 8px; width: 100%;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  /* ── お知らせ管理（設定タブ）── */
+  .announce-form {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px; margin-bottom: 12px;
+  }
+  .announce-textarea {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-size: 14px; padding: 8px 10px;
+    resize: vertical; min-height: 72px; font-family: 'Noto Sans JP', sans-serif;
+    margin-bottom: 8px; display: block;
+  }
+  .announce-post-btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; border-radius: 10px; color: #000;
+    font-size: 14px; font-weight: 900; padding: 9px 0;
+    cursor: pointer; width: 100%; font-family: 'Noto Sans JP', sans-serif;
+  }
+  .announce-post-btn:disabled { opacity: .4; }
+  .announce-manage-list { margin-top: 10px; }
+  .announce-manage-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; margin-bottom: 8px;
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .announce-manage-body { flex: 1; min-width: 0; }
+  .announce-manage-text { font-size: 13px; font-weight: 500; white-space: pre-wrap; word-break: break-all; }
+  .announce-manage-meta { font-size: 11px; color: var(--text2); margin-top: 3px; }
+  .announce-del-btn {
+    background: none; border: 1px solid var(--border); border-radius: 8px;
+    color: var(--red); font-size: 13px; padding: 4px 8px; cursor: pointer; flex-shrink: 0;
+  }
+
   /* ── 昨日ヒント ── */
   .room-yesterday {
     font-size: 10px; color: var(--text2); margin-top: 2px; min-height: 13px;
@@ -845,7 +936,10 @@
 
   <!-- TABS -->
   <div class="tabs" id="tabs">
-    <div class="tab active" onclick="switchTab('eggs')" id="tab-eggs">
+    <div class="tab active" onclick="switchTab('home')" id="tab-home">
+      <span class="tab-icon">🏠</span>ホーム
+    </div>
+    <div class="tab" onclick="switchTab('eggs')" id="tab-eggs">
       <span class="tab-icon">🥚</span>採卵
       <div class="has-badge" id="badge-eggs"></div>
     </div>
@@ -872,8 +966,31 @@
   <!-- CONTENT -->
   <div class="content" id="mainContent">
 
+    <!-- ホームタブ -->
+    <div class="tab-panel active" id="panel-home">
+      <!-- お知らせ -->
+      <div class="home-section" id="home-announce-section">
+        <div class="home-section-title">
+          📢 お知らせ
+        </div>
+        <div id="home-announcements-list">
+          <div class="home-empty">読み込み中...</div>
+        </div>
+      </div>
+      <!-- 今日の状況 -->
+      <div class="home-section">
+        <div class="home-section-title">
+          📅 今日の状況
+          <button class="home-refresh-btn" onclick="loadDashboard()">↺ 更新</button>
+        </div>
+        <div id="home-dashboard-table">
+          <div class="home-empty">読み込み中...</div>
+        </div>
+      </div>
+    </div>
+
     <!-- 採卵タブ -->
-    <div class="tab-panel active" id="panel-eggs">
+    <div class="tab-panel" id="panel-eggs">
       <div class="period-toggle">
         <div class="period-btn active" onclick="setPeriod('eggs','午前')" id="eggs-am">
           ☀️ 午前<div class="period-dot" id="dot-eggs-am"></div>
@@ -1020,6 +1137,22 @@
       <div class="section-label">餌の規定量（kg）</div>
       <div class="room-grid" id="settings-feed-grid"></div>
       <button class="settings-save-btn" id="settingsSaveBtn" onclick="saveSettingsData()">💾 規定量を保存</button>
+
+      <!-- 羽数管理 -->
+      <div class="flock-section-title">🐔 羽数管理</div>
+      <div id="flock-settings-grid"></div>
+      <button class="settings-save-btn" id="flockSaveBtn" onclick="saveFlockSettingsData()">💾 羽数設定を保存</button>
+
+      <!-- お知らせ管理 -->
+      <div class="flock-section-title">📢 お知らせ</div>
+      <div class="announce-form">
+        <textarea class="announce-textarea" id="announceText" placeholder="お知らせ内容を入力してください"></textarea>
+        <button class="announce-post-btn" id="announcePostBtn" onclick="postAnnouncement()">📤 投稿する</button>
+      </div>
+      <div class="announce-manage-list" id="announce-manage-list">
+        <div class="home-empty">読み込み中...</div>
+      </div>
+
       <div class="app-version" id="settings-saved-msg"></div>
     </div>
 
@@ -1107,7 +1240,7 @@ const data = {
 };
 let eggsPeriod = '午前';
 let feedPeriod = '午前';
-let currentTab = 'eggs'; // 現在アクティブなタブ
+let currentTab = 'home'; // 現在アクティブなタブ
 const dataCache = {};       // 'yyyy-MM-dd' → loaded data object（キャッシュ）
 const deadMonthlyCache = {}; // 'yyyy-MM-dd' → deadMonthlyData object
 const feedYesterdaySet = new Set(); // 規定量ボタンで入力された値 'period_room'
@@ -1184,6 +1317,7 @@ window.onload = function() {
   buildGrid('feed-grid', 'feed', 'kg', true);
   buildDeadGrid();
   buildSettingsGrid();
+  buildFlockSettingsGrid();
   loadSettingsData();
   loadAppVersion();
 };
@@ -1303,6 +1437,9 @@ function startApp() {
 
   document.getElementById('setupScreen').style.display = 'none';
   document.getElementById('mainApp').style.display = 'block';
+
+  // ホームタブのダッシュボードを読み込む
+  loadDashboard();
 
   // 今日 + 前6日を一括取得（GAS呼び出し1回で済む）
   const dates = [];
@@ -2002,6 +2139,7 @@ function doSave() {
         delete deadMonthlyCache[currentDate];
         historyData = null; // 保存後は履歴を再取得させる
         loadDeadMonthly(currentDate);
+        dashboardLoading = false; // ダッシュボードを次の切り替え時に再取得させる
         // 全タブのカードのloaded-valueを解除
         ['eggs', 'feed', 'dead'].forEach(tab => {
           ROOMS.forEach(room => {
@@ -2352,14 +2490,222 @@ let chartEggs = null;
 
 function switchTab(tab) {
   currentTab = tab;
-  ['eggs','feed','dead','summary','special','settings'].forEach(t => {
+  ['home','eggs','feed','dead','summary','special','settings'].forEach(t => {
     document.getElementById(`tab-${t}`)?.classList.toggle('active', t === tab);
     document.getElementById(`panel-${t}`)?.classList.toggle('active', t === tab);
   });
   if (tab === 'summary' && !summaryData) loadSummary();
-  // 集計・特記・設定タブでは通常の保存・クリアボタンを非表示
+  if (tab === 'home') loadDashboard();
+  if (tab === 'settings') { loadFlockSettingsUI(); loadAnnouncementsManage(); }
+  // ホーム・集計・特記・設定タブでは通常の保存・クリアボタンを非表示
   const bottomBar = document.querySelector('.bottom-bar');
-  if (bottomBar) bottomBar.style.display = (tab === 'summary' || tab === 'settings' || tab === 'special') ? 'none' : '';
+  if (bottomBar) bottomBar.style.display =
+    (tab === 'home' || tab === 'summary' || tab === 'settings' || tab === 'special') ? 'none' : '';
+}
+
+// ── ダッシュボード ──
+let dashboardLoading = false;
+function loadDashboard() {
+  if (dashboardLoading) return;
+  dashboardLoading = true;
+  document.getElementById('home-announcements-list').innerHTML = '<div class="home-empty">読み込み中...</div>';
+  document.getElementById('home-dashboard-table').innerHTML = '<div class="home-empty">読み込み中...</div>';
+  google.script.run
+    .withSuccessHandler(res => {
+      dashboardLoading = false;
+      if (res.success) renderDashboard(res);
+      else {
+        document.getElementById('home-dashboard-table').innerHTML = '<div class="home-empty">読み込み失敗</div>';
+      }
+    })
+    .withFailureHandler(() => {
+      dashboardLoading = false;
+      document.getElementById('home-dashboard-table').innerHTML = '<div class="home-empty">通信エラー</div>';
+    })
+    .getDashboardData(currentDate);
+}
+
+function renderDashboard(res) {
+  // お知らせ
+  const annoEl = document.getElementById('home-announcements-list');
+  if (!res.announcements || res.announcements.length === 0) {
+    annoEl.innerHTML = '<div class="home-empty">お知らせはありません</div>';
+  } else {
+    annoEl.innerHTML = res.announcements.map(a =>
+      `<div class="announce-card">
+        <div class="announce-card-header">
+          <span class="announce-card-meta">${a.date}　${a.worker}</span>
+        </div>
+        <div class="announce-card-text">${escHtml(a.text)}</div>
+      </div>`
+    ).join('');
+  }
+
+  // 今日の状況テーブル
+  const tableEl = document.getElementById('home-dashboard-table');
+  const hasFlock = Object.keys(res.currentFlock || {}).length > 0;
+  let html = `<table class="dashboard-table">
+    <thead><tr>
+      <th>鶏舎</th>
+      <th>🥚採卵</th>
+      <th>🌾餌</th>
+      ${hasFlock ? '<th>🐔羽数</th>' : ''}
+    </tr></thead><tbody>`;
+  ROOMS.forEach(room => {
+    const eggs = res.todayEggs?.[room];
+    const feed = res.todayFeed?.[room];
+    const flock = res.currentFlock?.[room];
+    html += `<tr>
+      <td>${room}</td>
+      <td class="${eggs != null ? 'dash-eggs' : 'dash-none'}">${eggs != null ? eggs + '個' : '－'}</td>
+      <td class="${feed != null ? 'dash-feed' : 'dash-none'}">${feed != null ? feed + 'kg' : '－'}</td>
+      ${hasFlock ? `<td class="${flock != null ? 'dash-flock' : 'dash-none'}">${flock != null ? flock.current + '羽' : '未設定'}</td>` : ''}
+    </tr>`;
+  });
+  // 合計行
+  const totalEggs = ROOMS.reduce((s,r) => s + (res.todayEggs?.[r] || 0), 0);
+  const totalFeed = Math.round(ROOMS.reduce((s,r) => s + (res.todayFeed?.[r] || 0), 0) * 10) / 10;
+  const totalFlock = hasFlock ? ROOMS.reduce((s,r) => s + (res.currentFlock?.[r]?.current || 0), 0) : null;
+  html += `<tr style="font-weight:800; border-top: 2px solid var(--border);">
+    <td style="color:var(--text)">合計</td>
+    <td class="dash-eggs">${totalEggs}個</td>
+    <td class="dash-feed">${totalFeed}kg</td>
+    ${hasFlock ? `<td class="dash-flock">${totalFlock}羽</td>` : ''}
+  </tr>`;
+  html += '</tbody></table>';
+  tableEl.innerHTML = html;
+}
+
+// ── 羽数設定UI ──
+let flockSettings = {}; // room → { startDate, initialCount }
+
+function loadFlockSettingsUI() {
+  google.script.run
+    .withSuccessHandler(res => {
+      if (res.success) {
+        flockSettings = {};
+        res.rooms.forEach(r => { flockSettings[r.room] = r; });
+        buildFlockSettingsGrid();
+      }
+    })
+    .getFlockSettings();
+}
+
+function buildFlockSettingsGrid() {
+  const container = document.getElementById('flock-settings-grid');
+  if (!container) return;
+  container.innerHTML = '';
+  ROOMS.forEach(room => {
+    const s = flockSettings[room] || { startDate: '', initialCount: '' };
+    const row = document.createElement('div');
+    row.className = 'flock-row';
+    row.innerHTML = `
+      <div class="flock-row-label">${room}</div>
+      <div class="flock-row-inputs">
+        <div class="flock-input-group">
+          <span class="flock-input-sublabel">入雛日</span>
+          <input class="flock-input" type="date" id="flock-date-${room}"
+            value="${s.startDate || ''}" onchange="flockChanged('${room}')">
+        </div>
+        <div class="flock-input-group">
+          <span class="flock-input-sublabel">初期羽数</span>
+          <input class="flock-input" type="number" inputmode="numeric" pattern="[0-9]*"
+            id="flock-count-${room}" value="${s.initialCount || ''}" placeholder="0"
+            oninput="flockChanged('${room}')">
+        </div>
+      </div>`;
+    container.appendChild(row);
+  });
+}
+
+function flockChanged(room) {
+  const d = document.getElementById(`flock-date-${room}`)?.value || '';
+  const c = document.getElementById(`flock-count-${room}`)?.value || '';
+  flockSettings[room] = { room, startDate: d, initialCount: c };
+}
+
+function saveFlockSettingsData() {
+  const btn = document.getElementById('flockSaveBtn');
+  btn.disabled = true;
+  const rooms = ROOMS.map(room => {
+    const d = document.getElementById(`flock-date-${room}`)?.value || '';
+    const c = document.getElementById(`flock-count-${room}`)?.value || '';
+    return { room, startDate: d, initialCount: c ? Number(c) : '' };
+  }).filter(r => r.startDate && r.initialCount !== '');
+  google.script.run
+    .withSuccessHandler(res => {
+      btn.disabled = false;
+      if (res.success) showToast('✅ 羽数設定を保存しました', 'success');
+      else showToast('❌ 保存失敗', 'error');
+    })
+    .withFailureHandler(() => { btn.disabled = false; showToast('❌ 保存失敗', 'error'); })
+    .saveFlockSettings({ rooms });
+}
+
+// ── お知らせ管理 ──
+let announceList = [];
+
+function loadAnnouncementsManage() {
+  const el = document.getElementById('announce-manage-list');
+  if (el) el.innerHTML = '<div class="home-empty">読み込み中...</div>';
+  google.script.run
+    .withSuccessHandler(res => {
+      if (res.success) {
+        announceList = res.announcements;
+        renderAnnouncementsManage();
+      } else if (el) el.innerHTML = '<div class="home-empty">読み込み失敗</div>';
+    })
+    .withFailureHandler(() => { if (el) el.innerHTML = '<div class="home-empty">通信エラー</div>'; })
+    .getAnnouncements();
+}
+
+function renderAnnouncementsManage() {
+  const el = document.getElementById('announce-manage-list');
+  if (!el) return;
+  if (!announceList.length) { el.innerHTML = '<div class="home-empty">投稿なし</div>'; return; }
+  el.innerHTML = announceList.map(a =>
+    `<div class="announce-manage-card">
+      <div class="announce-manage-body">
+        <div class="announce-manage-text">${escHtml(a.text)}</div>
+        <div class="announce-manage-meta">${a.date}　${a.worker}</div>
+      </div>
+      <button class="announce-del-btn" onclick="deleteAnnouncementEntry(${a.id})">削除</button>
+    </div>`
+  ).join('');
+}
+
+function postAnnouncement() {
+  const text = (document.getElementById('announceText')?.value || '').trim();
+  if (!text) { showToast('内容を入力してください', 'error'); return; }
+  if (!currentWorker) { showToast('入力者を選択してください', 'error'); return; }
+  const btn = document.getElementById('announcePostBtn');
+  btn.disabled = true;
+  google.script.run
+    .withSuccessHandler(res => {
+      btn.disabled = false;
+      if (res.success) {
+        document.getElementById('announceText').value = '';
+        showToast('✅ 投稿しました', 'success');
+        loadAnnouncementsManage();
+      } else showToast('❌ 投稿失敗', 'error');
+    })
+    .withFailureHandler(() => { btn.disabled = false; showToast('❌ 投稿失敗', 'error'); })
+    .saveAnnouncement({ text, worker: currentWorker });
+}
+
+function deleteAnnouncementEntry(rowNum) {
+  if (!confirm('このお知らせを削除しますか？')) return;
+  google.script.run
+    .withSuccessHandler(res => {
+      if (res.success) { showToast('削除しました', 'success'); loadAnnouncementsManage(); }
+      else showToast('❌ 削除失敗', 'error');
+    })
+    .withFailureHandler(() => showToast('❌ 削除失敗', 'error'))
+    .deleteAnnouncement(rowNum);
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function loadHistory() {
